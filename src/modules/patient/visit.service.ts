@@ -1,6 +1,7 @@
-import { VisitCreateInput, VisitUpdateInput, VisitCreateResponse, VisitFilterOptions } from './visit.type';
+import { VisitCreateInput, VisitUpdateInput, VisitCreateResponse, VisitFilterOptions, VisitDetailsInput, VisitDetailsResponse } from './visit.type';
 import { VisitRepository } from './visit.repository';
 import { getModuleLogger } from '../../utils';
+import { prisma } from '../../common';
 
 const logger = getModuleLogger('visit-service');
 
@@ -176,6 +177,75 @@ export const VisitService = {
       logger.error('Error fetching visits', {
         error,
         filters,
+        requestId,
+        userId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Add details (diagnoses and prescriptions) to an existing visit
+   */
+  async addVisitDetails(input: VisitDetailsInput, requestId: string, userId: string): Promise<VisitDetailsResponse> {
+    try {
+      logger.debug('Adding visit details', { input, requestId, userId });
+
+      // Check if visit exists
+      const visit = await VisitRepository.findVisitById(input.visitId, requestId);
+      if (!visit) {
+        throw new Error('Visit not found');
+      }
+
+      // Validate that at least one of diagnoses or prescriptions is provided
+      if (!input.diagnoses?.length && !input.prescriptions?.length) {
+        throw new Error('At least one diagnosis or prescription must be provided');
+      }
+
+      let insertedDiagnoses: any[] = [];
+      let insertedPrescriptions: any[] = [];
+
+      // Use transaction to ensure data consistency
+      await prisma.$transaction(async (tx) => {
+        // Insert diagnoses if provided
+        if (input.diagnoses && input.diagnoses.length > 0) {
+          insertedDiagnoses = await VisitRepository.insertDiagnoses(
+            input.visitId,
+            input.diagnoses,
+            requestId
+          );
+        }
+
+        // Insert prescriptions if provided
+        if (input.prescriptions && input.prescriptions.length > 0) {
+          insertedPrescriptions = await VisitRepository.insertPrescriptions(
+            input.visitId,
+            input.prescriptions,
+            requestId
+          );
+        }
+      });
+
+      logger.info('Visit details added successfully', {
+        visitId: input.visitId,
+        diagnosesCount: insertedDiagnoses.length,
+        prescriptionsCount: insertedPrescriptions.length,
+        requestId,
+        userId,
+      });
+
+      return {
+        success: true,
+        message: 'Visit updated successfully',
+        data: {
+          diagnoses: insertedDiagnoses,
+          prescriptions: insertedPrescriptions,
+        },
+      };
+    } catch (error) {
+      logger.error('Error adding visit details', {
+        error,
+        input,
         requestId,
         userId,
       });

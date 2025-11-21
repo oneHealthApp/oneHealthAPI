@@ -78,3 +78,53 @@ export interface VisitFilterOptions {
   startDate?: Date;
   endDate?: Date;
 }
+
+/**
+ * Input type for adding diagnosis to a visit.
+ */
+export interface DiagnosisInput {
+  providerId?: string;
+  icdCode: string;
+  snomedId?: string;
+  label: string;
+  primary?: boolean;
+  confidence?: number;
+  status?: string;
+  notes?: string;
+}
+
+/**
+ * Input type for adding prescription to a visit.
+ */
+export interface PrescriptionInput {
+  prescriberId?: string;
+  diagnosisId?: string;
+  items: {
+    medicine: string;
+    dose: string;
+    frequency: string;
+    duration: string;
+  }[];
+  instructions?: string;
+}
+
+/**
+ * Input type for adding visit details (diagnoses and prescriptions).
+ */
+export interface VisitDetailsInput {
+  visitId: string;
+  diagnoses?: DiagnosisInput[];
+  prescriptions?: PrescriptionInput[];
+}
+
+/**
+ * Response type for visit details creation.
+ */
+export interface VisitDetailsResponse {
+  success: boolean;
+  message: string;
+  data: {
+    diagnoses: any[];
+    prescriptions: any[];
+  };
+}

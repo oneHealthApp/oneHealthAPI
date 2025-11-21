@@ -60,4 +60,64 @@ export const VisitValidator = {
     workflowState: Joi.string().valid('OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED').optional(),
     endedAt: Joi.date().optional().allow(null),
   }),
+
+  addDetails: Joi.object({
+    visitId: Joi.string().required().messages({
+      'string.empty': 'Visit ID is required',
+      'any.required': 'Visit ID is required',
+    }),
+    diagnoses: Joi.array().items(
+      Joi.object({
+        providerId: Joi.string().optional(),
+        icdCode: Joi.string().required().messages({
+          'string.empty': 'ICD code is required',
+          'any.required': 'ICD code is required',
+        }),
+        snomedId: Joi.string().optional(),
+        label: Joi.string().required().messages({
+          'string.empty': 'Diagnosis label is required',
+          'any.required': 'Diagnosis label is required',
+        }),
+        primary: Joi.boolean().optional(),
+        confidence: Joi.number().min(0).max(1).optional().messages({
+          'number.min': 'Confidence must be between 0 and 1',
+          'number.max': 'Confidence must be between 0 and 1',
+        }),
+        status: Joi.string().valid('provisional', 'confirmed', 'ruled-out').optional(),
+        notes: Joi.string().max(500).optional().allow(''),
+      })
+    ).optional().min(0),
+    prescriptions: Joi.array().items(
+      Joi.object({
+        prescriberId: Joi.string().optional(),
+        diagnosisId: Joi.string().optional(),
+        items: Joi.array().items(
+          Joi.object({
+            medicine: Joi.string().required().messages({
+              'string.empty': 'Medicine name is required',
+              'any.required': 'Medicine name is required',
+            }),
+            dose: Joi.string().required().messages({
+              'string.empty': 'Dose is required',
+              'any.required': 'Dose is required',
+            }),
+            frequency: Joi.string().required().messages({
+              'string.empty': 'Frequency is required',
+              'any.required': 'Frequency is required',
+            }),
+            duration: Joi.string().required().messages({
+              'string.empty': 'Duration is required',
+              'any.required': 'Duration is required',
+            }),
+          })
+        ).required().min(1).messages({
+          'array.min': 'At least one prescription item is required',
+          'any.required': 'Prescription items are required',
+        }),
+        instructions: Joi.string().max(1000).optional().allow(''),
+      })
+    ).optional().min(0),
+  }).or('diagnoses', 'prescriptions').messages({
+    'object.missing': 'At least one of diagnoses or prescriptions must be provided',
+  }),
 };
