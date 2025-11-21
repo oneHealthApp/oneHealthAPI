@@ -481,7 +481,7 @@ model Visit {
   startedAt DateTime  @default(now())
   endedAt   DateTime?
 
-  symptoms Json?
+  symptoms String?
   vitals   Json?
   notes    String?
   workflowState String?
