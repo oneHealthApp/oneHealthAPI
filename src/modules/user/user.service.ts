@@ -1,5 +1,5 @@
-import { Prisma, User } from '@prisma/client';
-import { UserCreateInput } from './user.type';
+import { Prisma, User, PersonType } from '@prisma/client';
+import { UserCreateInput, StaffCreateInput, StaffCreateResponse } from './user.type';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { UserRepository } from './user.repository';
@@ -98,6 +98,110 @@ export const UserService = {
         },
         requestId,
         userId
+      });
+      throw error;
+    }
+  },
+
+  async createStaff(input: StaffCreateInput, requestId: string, createdBy: string): Promise<StaffCreateResponse> {
+    try {
+      logger.debug('Creating staff user', { 
+        input: { ...input, password: '**REDACTED**' }, 
+        requestId, 
+        createdBy 
+      });
+
+      // First, check if the roleId exists and get the role name to verify if it's STAFF
+      const role = await UserRepository.findRoleById(input.roleId);
+      if (!role) {
+        throw new Error('Invalid role ID');
+      }
+
+      const isStaffRole = role.roleName === 'STAFF';
+      logger.debug('Role validation', { roleId: input.roleId, roleName: role.roleName, isStaffRole });
+
+      // Validate unique fields
+      const existingUser = await UserRepository.findUserByIdentifier(input.username);
+      if (existingUser) {
+        throw new Error('Username already exists');
+      }
+
+      const emailExists = await UserRepository.findUserByIdentifier(input.email);
+      if (emailExists) {
+        throw new Error('Email already registered');
+      }
+
+      const phoneExists = await UserRepository.findUserByIdentifier(input.phoneNumber);
+      if (phoneExists) {
+        throw new Error('Phone number already registered');
+      }
+
+      // Validate tenant and clinic existence
+      const tenant = await UserRepository.findTenantById(input.tenantId);
+      if (!tenant) {
+        throw new Error('Invalid tenant ID');
+      }
+
+      const clinic = await UserRepository.findClinicById(input.clinicId);
+      if (!clinic) {
+        throw new Error('Invalid clinic ID');
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(input.password, 10);
+
+      // Use Prisma transaction to create User, Person (if STAFF), UserRole, and UserClinic
+      const result = await UserRepository.createStaffWithTransaction({
+        userData: {
+          username: input.username,
+          passwordHash: hashedPassword,
+          emailId: input.email,
+          mobileNumber: input.phoneNumber,
+          tenantId: input.tenantId,
+          emailValidationStatus: false,
+          mobileValidationStatus: false,
+          isLocked: false,
+          multiSessionCount: 1,
+          createdBy,
+          updatedBy: createdBy,
+        },
+        personData: isStaffRole ? {
+          tenantId: input.tenantId,
+          type: PersonType.USER,
+          fullName: input.name,
+          phone: input.phoneNumber,
+          email: input.email,
+          sex: input.sex || null,
+        } : null,
+        roleData: {
+          roleId: input.roleId,
+          priority: role.priority,
+          createdBy,
+          updatedBy: createdBy,
+        },
+        clinicData: {
+          clinicId: input.clinicId,
+          roleInClinic: 'STAFF',
+        },
+      }, requestId);
+
+      logger.info('Staff user created successfully', {
+        username: result.user.username,
+        personCreated: isStaffRole,
+        requestId
+      });
+
+      return {
+        success: true,
+        message: 'User created successfully',
+        data: result,
+      };
+    } catch (error) {
+      logger.error('Staff creation failed', {
+        error,
+        input: { ...input, password: '**REDACTED**' },
+        requestId,
+        createdBy
       });
       throw error;
     }
@@ -539,5 +643,5 @@ async verifyEmailById(
       logger.error('Failed to resend verification', { identifier, error, requestId });
       throw error;
     }
-  }
+  },
 };

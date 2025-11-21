@@ -160,4 +160,172 @@ export const UserRepository = {
       },
     });
   },
+
+  async findRoleById(roleId: string) {
+    try {
+      return await prisma.role.findUnique({
+        where: { id: roleId },
+        select: {
+          id: true,
+          roleName: true,
+          priority: true,
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      logger.error('Error finding role by ID', { roleId, error });
+      throw error;
+    }
+  },
+
+  async findTenantById(tenantId: string) {
+    try {
+      return await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+        },
+      });
+    } catch (error) {
+      logger.error('Error finding tenant by ID', { tenantId, error });
+      throw error;
+    }
+  },
+
+  async findClinicById(clinicId: string) {
+    try {
+      return await prisma.clinic.findUnique({
+        where: { id: clinicId },
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+          tenantId: true,
+        },
+      });
+    } catch (error) {
+      logger.error('Error finding clinic by ID', { clinicId, error });
+      throw error;
+    }
+  },
+
+  async createStaffWithTransaction(data: {
+    userData: {
+      username: string;
+      passwordHash: string;
+      emailId: string;
+      mobileNumber: string;
+      tenantId: string;
+      emailValidationStatus: boolean;
+      mobileValidationStatus: boolean;
+      isLocked: boolean;
+      multiSessionCount: number;
+      createdBy: string;
+      updatedBy: string;
+    };
+    personData: {
+      tenantId: string;
+      type: import('@prisma/client').PersonType;
+      fullName: string;
+      phone: string;
+      email: string;
+      sex: string | null;
+    } | null;
+    roleData: {
+      roleId: string;
+      priority: number;
+      createdBy: string;
+      updatedBy: string;
+    };
+    clinicData: {
+      clinicId: string;
+      roleInClinic: string;
+    };
+  }, requestId: string) {
+    try {
+      logger.debug('Starting staff creation transaction', { requestId });
+
+      return await prisma.$transaction(async (tx) => {
+        // 1. Create User
+        const user = await tx.user.create({
+          data: data.userData,
+        });
+
+        // 2. Create Person if staff role
+        let person = null;
+        if (data.personData) {
+          person = await tx.person.create({
+            data: data.personData,
+          });
+
+          // Link person to user
+          await tx.user.update({
+            where: { id: user.id },
+            data: { personId: person.id },
+          });
+        }
+
+        // 3. Create UserRole
+        const userRole = await tx.userRole.create({
+          data: {
+            userId: user.id,
+            ...data.roleData,
+          },
+        });
+
+        // 4. Create UserClinic
+        const userClinic = await tx.userClinic.create({
+          data: {
+            userId: user.id,
+            ...data.clinicData,
+          },
+        });
+
+        logger.debug('Staff creation transaction completed', {
+          userId: user.id,
+          personId: person?.id,
+          requestId
+        });
+
+        return {
+          user: {
+            id: user.id,
+            username: user.username,
+            emailId: user.emailId,
+            mobileNumber: user.mobileNumber,
+            tenantId: user.tenantId,
+            personId: user.personId,
+            createdAt: user.createdAt,
+          },
+          person: person ? {
+            id: person.id,
+            tenantId: person.tenantId,
+            type: person.type,
+            fullName: person.fullName,
+            phone: person.phone,
+            email: person.email,
+            sex: person.sex,
+            createdAt: person.createdAt,
+          } : undefined,
+          userRole: {
+            id: userRole.id,
+            userId: userRole.userId,
+            roleId: userRole.roleId,
+            priority: userRole.priority,
+          },
+          userClinic: {
+            id: userClinic.id,
+            userId: userClinic.userId,
+            clinicId: userClinic.clinicId,
+            roleInClinic: userClinic.roleInClinic,
+          },
+        };
+      });
+    } catch (error) {
+      logger.error('Error in staff creation transaction', { error, requestId });
+      throw error;
+    }
+  },
 };

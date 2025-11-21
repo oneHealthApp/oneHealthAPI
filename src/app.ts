@@ -17,6 +17,7 @@ import {
   authRouter,
   patientRoutes,
   clinicRoutes,
+  doctorRoutes,
 } from './modules';
 import setupRoutes from './routes/setup.routes';
 
@@ -92,6 +93,7 @@ app.use(
   UserRoleRoutes,
   patientRoutes,
   clinicRoutes,
+  doctorRoutes,
 );
 
 // Setup routes (for development/testing only)

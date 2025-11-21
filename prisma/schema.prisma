@@ -61,6 +61,7 @@ enum PersonType {
   HUMAN_PATIENT
   GUARDIAN
   FARMER
+  DOCTOR
   OTHER
 }
 
