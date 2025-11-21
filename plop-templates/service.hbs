@@ -1,0 +1,81 @@
+import { {{pascalCase lastFolder}}CreateInput, {{pascalCase lastFolder}}UpdateInput } from "./{{lastFolder}}.type";
+import { {{pascalCase lastFolder}}Repository } from "./{{lastFolder}}.repository";
+import { getModuleLogger, PaginationInput } from "{{relativeUtils}}";
+
+const logger = getModuleLogger("{{dashCase lastFolder}}-service");
+
+/**
+ * Business logic layer for {{pascalCase lastFolder}} operations.
+ */
+export const {{pascalCase lastFolder}}Service = {
+  async create(data: {{pascalCase lastFolder}}CreateInput, requestId: string, userId: string) {
+    try {
+      logger.debug("Creating {{pascalCase lastFolder}}", { data, requestId, userId });
+      return await {{pascalCase lastFolder}}Repository.create(data, requestId, userId);
+    } catch (error) {
+      logger.error("Error creating {{pascalCase lastFolder}}", { error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async getAll(requestId: string, userId: string) {
+    try {
+      logger.debug("Fetching all {{camelCase lastFolder}}s", { requestId, userId });
+      return await {{pascalCase lastFolder}}Repository.getAll(requestId, userId);
+    } catch (error) {
+      logger.error("Error fetching all {{camelCase lastFolder}}s", { error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async getPaginated(pagination: PaginationInput, requestId: string, userId: string) {
+    try {
+      logger.debug("Fetching paginated {{camelCase lastFolder}}s", {
+        pagination,
+        requestId,
+        userId,
+      });
+      return await {{pascalCase lastFolder}}Repository.getPaginated(pagination, requestId, userId);
+    } catch (error) {
+      logger.error("Error fetching paginated {{camelCase lastFolder}}s", {
+        error,
+        requestId,
+        userId,
+      });
+      throw error;
+    }
+  },
+
+  async get(id: string, requestId: string, userId: string) {
+    try {
+      return await {{pascalCase lastFolder}}Repository.get(id, requestId, userId);
+    } catch (error) {
+      logger.error("Error fetching {{pascalCase lastFolder}} by ID", { id, error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async update(id: string, data: {{pascalCase lastFolder}}UpdateInput, requestId: string, userId: string) {
+    try {
+      const exists = await {{pascalCase lastFolder}}Repository.get(id, requestId, userId);
+      if (!exists) return null;
+      logger.debug("Updating {{pascalCase lastFolder}}", { id, data, requestId, userId });
+      return await {{pascalCase lastFolder}}Repository.update(id, data, requestId, userId);
+    } catch (error) {
+      logger.error("Error updating {{pascalCase lastFolder}}", { id, error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async delete(id: string, requestId: string, userId: string) {
+    try {
+      const exists = await {{pascalCase lastFolder}}Repository.get(id, requestId, userId);
+      if (!exists) return null;
+      logger.debug("Deleting {{pascalCase lastFolder}}", { id, requestId, userId });
+      return await {{pascalCase lastFolder}}Repository.delete(id, requestId, userId);
+    } catch (error) {
+      logger.error("Error deleting {{pascalCase lastFolder}}", { id, error, requestId, userId });
+      throw error;
+    }
+  },
+};

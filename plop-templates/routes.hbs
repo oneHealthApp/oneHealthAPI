@@ -1,0 +1,32 @@
+import { Router } from "express";
+import { {{pascalCase lastFolder}}Controller } from "./{{lastFolder}}.controller";
+import { {{pascalCase lastFolder}}Validator } from "./{{lastFolder}}.validator";
+import { validateRequest } from "{{relativeMiddleware}}";
+
+const router = Router();
+
+/**
+ * Routes for {{pascalCase lastFolder}} module.
+ */
+
+router.post(
+  "/o/{{dashCase lastFolder}}",
+  validateRequest({{pascalCase lastFolder}}Validator.createOrUpdate),
+  {{pascalCase lastFolder}}Controller.create
+);
+
+router.get("/o/{{dashCase lastFolder}}", {{pascalCase lastFolder}}Controller.getAll);
+
+router.get("/o/{{dashCase lastFolder}}/page", {{pascalCase lastFolder}}Controller.getAllPaginated);
+
+router.get("/o/{{dashCase lastFolder}}/:id", {{pascalCase lastFolder}}Controller.getById);
+
+router.put(
+  "/o/{{dashCase lastFolder}}/:id",
+  validateRequest({{pascalCase lastFolder}}Validator.createOrUpdate),
+  {{pascalCase lastFolder}}Controller.update
+);
+
+router.delete("/o/{{dashCase lastFolder}}/:id", {{pascalCase lastFolder}}Controller.delete);
+
+export default router;

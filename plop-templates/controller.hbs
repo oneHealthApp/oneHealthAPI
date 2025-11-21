@@ -1,0 +1,198 @@
+import { Request, Response } from "express";
+import { {{pascalCase lastFolder}}Service } from "./{{lastFolder}}.service";
+import { successResponse, errorResponse, getModuleLogger, PaginationInput } from "{{relativeUtils}}";
+
+const logger = getModuleLogger("{{dashCase lastFolder}}-controller");
+
+/**
+ * Controller layer for {{pascalCase lastFolder}} operations.
+ */
+export const {{pascalCase lastFolder}}Controller = {
+  async create(req: Request, res: Response) {
+    try {
+      const result = await {{pascalCase lastFolder}}Service.create(
+        req.body,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+      logger.debug("✅ {{pascalCase lastFolder}} created:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        result,
+      });
+      successResponse(res, result, 201);
+    } catch (error) {
+      logger.error("❌ create {{pascalCase lastFolder}} error:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+      errorResponse(
+        res,
+        error || "Failed to create {{camelCase lastFolder}}",
+        500,
+        process.env.NODE_ENV === "development" ? String(error) : undefined
+      );
+    }
+  },
+
+  async getAll(req: Request, res: Response) {
+    try {
+      const result = await {{pascalCase lastFolder}}Service.getAll(
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+      logger.debug("✅ all {{camelCase lastFolder}}s retrieved:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        result,
+      });
+      successResponse(res, result);
+    } catch (error) {
+      logger.error("❌ get all {{camelCase lastFolder}}s error:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+      errorResponse(
+        res,
+          error || "Failed to fetch {{camelCase lastFolder}}s",
+        500,
+        process.env.NODE_ENV === "development" ? String(error) : undefined
+      );
+    }
+  },
+
+  async getAllPaginated(req: Request, res: Response) {
+    try {
+      const pagination: PaginationInput = req.body?.pagination || {
+        page: 1,
+        limit: 10,
+      };
+      const result = await {{pascalCase lastFolder}}Service.getPaginated(
+        pagination,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+      logger.debug("✅ paginated {{camelCase lastFolder}}s retrieved:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        pagination,
+        result,
+      });
+      successResponse(res, result);
+    } catch (error) {
+      logger.error("❌ paginated fetch error:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+      errorResponse(
+        res,
+          error ||  "Failed to fetch paginated {{camelCase lastFolder}}s",
+        500,
+        process.env.NODE_ENV === "development" ? String(error) : undefined
+      );
+    }
+  },
+
+  async getById(req: Request, res: Response) {
+    try {
+      const id = String(req.params.id);
+      const result = await {{pascalCase lastFolder}}Service.get(
+        id,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+      if (!result) {
+        errorResponse(res, "{{pascalCase lastFolder}} not found", 404);
+        return;
+      }
+      logger.debug("✅ {{pascalCase lastFolder}} retrieved by ID:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        result,
+      });
+      successResponse(res, result);
+    } catch (error) {
+      logger.error("❌ get by ID error:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+      errorResponse(
+        res,
+          error || "Failed to fetch {{camelCase lastFolder}}",
+        500,
+        process.env.NODE_ENV === "development" ? String(error) : undefined
+      );
+    }
+  },
+
+  async update(req: Request, res: Response) {
+    try {
+      const id = String(req.params.id);
+      const result = await {{pascalCase lastFolder}}Service.update(
+        id,
+        req.body,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+      if (!result) {
+        errorResponse(res, "{{pascalCase lastFolder}} not found", 404);
+        return;
+      }
+      logger.debug("✅ {{pascalCase lastFolder}} updated:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        result,
+      });
+      successResponse(res, result);
+    } catch (error) {
+      logger.error("❌ update {{pascalCase lastFolder}} error:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+      errorResponse(
+        res,
+        error || "Failed to update {{camelCase lastFolder}}",
+        500,
+        process.env.NODE_ENV === "development" ? String(error) : undefined
+      );
+    }
+  },
+
+  async delete(req: Request, res: Response) {
+    try {
+      const id = String(req.params.id);
+      const result = await {{pascalCase lastFolder}}Service.delete(
+        id,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+      if (!result) {
+        errorResponse(res, "{{pascalCase lastFolder}} not found", 404);
+        return;
+      }
+      logger.debug("✅ {{pascalCase lastFolder}} deleted:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        result,
+      });
+      successResponse(res, result);
+    } catch (error) {
+      logger.error("❌ delete {{pascalCase lastFolder}} error:", {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+      errorResponse(
+        res,
+          error || "Failed to delete {{camelCase lastFolder}}",
+        500,
+        process.env.NODE_ENV === "development" ? String(error) : undefined
+      );
+    }
+  },
+};

@@ -1,0 +1,95 @@
+import { prisma } from "{{relativeCommon}}";
+import { {{pascalCase lastFolder}}CreateInput, {{pascalCase lastFolder}}UpdateInput } from "./{{lastFolder}}.type";
+import { getModuleLogger, PaginationInput } from "{{relativeUtils}}";
+
+const logger = getModuleLogger("{{dashCase lastFolder}}-repository");
+
+/**
+ * Repository layer for direct DB access ({{pascalCase lastFolder}} entity).
+ */
+export const {{pascalCase lastFolder}}Repository = {
+  async create(data: {{pascalCase lastFolder}}CreateInput, requestId: string, userId: string) {
+    try {
+      const result = await prisma.{{camelCase lastFolder}}.create({ data });
+      logger.debug("{{pascalCase lastFolder}} created successfully", { data, result, requestId, userId });
+      return result;
+    } catch (error) {
+      logger.error("Error creating {{pascalCase lastFolder}}:", { error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async getAll(requestId: string, userId: string) {
+    try {
+      const result = await prisma.{{camelCase lastFolder}}.findMany();
+      logger.debug("Fetched all {{camelCase lastFolder}}s successfully", { result, requestId, userId });
+      return result;
+    } catch (error) {
+      logger.error("Error fetching all {{camelCase lastFolder}}s:", { error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async getPaginated(pagination: PaginationInput, requestId: string, userId: string) {
+    try {
+      const { page, limit } = pagination;
+      const skip = (page - 1) * limit;
+
+      const [data, total] = await prisma.$transaction([
+        prisma.{{camelCase lastFolder}}.findMany({ skip, take: limit }),
+        prisma.{{camelCase lastFolder}}.count(),
+      ]);
+
+      logger.debug("Fetched paginated {{camelCase lastFolder}}s successfully", {
+        data,
+        total,
+        requestId,
+        userId,
+      });
+
+      return {
+        data,
+        total,
+        currentPage: page,
+        pageSize: limit,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      logger.error("Error fetching paginated {{camelCase lastFolder}}s:", { error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async get(id: string, requestId: string, userId: string) {
+    try {
+      const result = await prisma.{{camelCase lastFolder}}.findUnique({ where: { id } });
+      logger.debug("Fetched {{pascalCase lastFolder}} by ID successfully", { id, result, requestId, userId });
+      return result;
+    } catch (error) {
+      logger.error("Error fetching {{pascalCase lastFolder}} by ID:", { id, error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async update(id: string, data: {{pascalCase lastFolder}}UpdateInput, requestId: string, userId: string) {
+    try {
+      const result = await prisma.{{camelCase lastFolder}}.update({ where: { id }, data });
+      logger.debug("Updated {{pascalCase lastFolder}} successfully", { id, data, result, requestId, userId });
+      return result;
+    } catch (error) {
+      logger.error("Error updating {{pascalCase lastFolder}} with ID:", { id, error, requestId, userId });
+      throw error;
+    }
+  },
+
+  async delete(id: string, requestId: string, userId: string) {
+    try {
+      const result = await prisma.{{camelCase lastFolder}}.delete({ where: { id } });
+      logger.debug("Deleted {{pascalCase lastFolder}} successfully", { id, result, requestId, userId });
+      return result;
+    } catch (error) {
+      logger.error("Error deleting {{pascalCase lastFolder}} with ID:", { id, error, requestId, userId });
+      throw error;
+    }
+  },
+};

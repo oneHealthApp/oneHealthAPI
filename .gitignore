@@ -1,0 +1,20 @@
+node_modules/
+.git/
+dist/
+logs/
+.env
+.DS_Store
+.vscode/
+coverage/
+.idea/
+.tgz
+.swp
+.swo
+.bak
+.tmp
+.local
+.env.*
+# Prisma
+prisma/.env
+# Sonar
+.sonar/

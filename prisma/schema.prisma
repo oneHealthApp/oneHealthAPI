@@ -1,0 +1,796 @@
+// ================================================
+// DATASOURCE & GENERATOR
+// ================================================
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+//////////////////////////
+// ENUMS
+//////////////////////////
+enum PatientType {
+  HUMAN
+  PET
+  LIVESTOCK
+}
+
+enum VisitType {
+  CLINIC
+  HOME
+  ON_CALL
+  FARM
+}
+
+enum ConsentStatus {
+  GIVEN
+  REVOKED
+  PENDING
+}
+
+enum Species {
+  DOG
+  CAT
+  COW
+  GOAT
+  SHEEP
+  PIG
+  OTHER
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  PREMIUM
+}
+
+enum NotificationChannel {
+  SMS
+  EMAIL
+  PUSH
+}
+
+enum PersonType {
+  USER
+  OWNER
+  HUMAN_PATIENT
+  GUARDIAN
+  FARMER
+  OTHER
+}
+
+//////////////////////////
+// RBAC MODELS
+//////////////////////////
+model Role {
+  id             String   @id @default(cuid())
+  roleName       String   @unique
+  roleCategory   String?
+  priority       Int      @db.SmallInt
+  createdAt      DateTime @default(now())
+  createdBy      String
+  updatedAt      DateTime @updatedAt
+  updatedBy      String
+  isActive       Boolean  @default(true)
+
+  roleMenuAccess RoleMenuAccess[]
+  userRoles      UserRole[]
+}
+
+model Menu {
+  id             String   @id @default(cuid())
+  menuName       String   @unique
+  path           String
+  menuIcon       String?
+  layout         String
+  displayOrdinal Int      @db.SmallInt
+  childOf        String?
+  createdAt      DateTime @default(now())
+  createdBy      String
+  updatedAt      DateTime @updatedAt
+  updatedBy      String
+  isActive       Boolean  @default(true)
+
+  parentMenu     Menu?    @relation("MenuHierarchy", fields: [childOf], references: [id])
+  subMenus       Menu[]   @relation("MenuHierarchy")
+  roleMenuAccess RoleMenuAccess[]
+}
+
+model RoleMenuAccess {
+  id        String   @id @default(cuid())
+  roleId    String
+  menuId    String
+  create    Boolean  @default(true)
+  read      Boolean  @default(true)
+  update    Boolean  @default(true)
+  delete    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu      Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, menuId])
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  userId    String
+  roleId    String
+  priority  Int      @db.SmallInt
+  createdAt DateTime @default(now())
+  createdBy String
+  updatedAt DateTime @updatedAt
+  updatedBy String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+}
+
+//////////////////////////
+// TENANT + SUBSCRIPTION
+//////////////////////////
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscription Subscription?
+  clinics      Clinic[]
+  users        User[]
+  branding     Json?
+  metadata     Json?
+
+  addressId String?
+  address   Address? @relation("TenantAddress", fields: [addressId], references: [id])
+
+  persons    Person[]
+  patients   Patient[]
+  visits     Visit[]
+  appointments Appointment[]
+  notifications Notification[]
+  dataEvents DataEvent[]
+  auditLogs  AuditLog[]
+  envData    EnvData[]
+  exposureEvents ExposureEvent[]
+  outbreakPredictions OutbreakPrediction[]
+  owners     Owner[]
+
+  @@index([slug])
+}
+
+model Subscription {
+  id        String           @id @default(cuid())
+  tenantId  String           @unique
+  tenant    Tenant           @relation(fields: [tenantId], references: [id])
+  tier      SubscriptionTier
+  startedAt DateTime         @default(now())
+  expiresAt DateTime?
+  metadata  Json?
+}
+
+//////////////////////////
+// PERSON MODEL
+//////////////////////////
+model Person {
+  id         String    @id @default(cuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  type       PersonType @default(OTHER)
+
+  fullName   String?
+  phone      String?
+  email      String?
+  dateOfBirth DateTime?
+  sex        String?
+
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  addressId  String?
+  address    Address? @relation("PersonAddress", fields: [addressId], references: [id])
+
+  user             User?
+  owner            Owner?
+  patientIdentity  PatientIdentity?
+
+  exposureEvents   ExposureEvent[] // NEW LINK
+
+  @@index([tenantId])
+  @@index([phone])
+  @@index([email])
+}
+
+//////////////////////////
+// USER MODEL (MERGED)
+//////////////////////////
+model User {
+  id                     String   @id @default(cuid())
+
+  username               String   @unique
+  passwordHash           String
+  passwordExpiryDate     DateTime?
+
+  emailId                String?  @unique
+  mobileNumber           String?  @unique
+  countryDialCode        String?
+
+  emailVerified          Boolean  @default(false)
+  emailValidationStatus  Boolean  @default(false)
+  mobileValidationStatus Boolean  @default(false)
+
+  confirmationToken      String?
+  tokenGenerationTime    DateTime?
+  passwordRecoveryToken  String?
+  recoveryTokenTime      DateTime?
+
+  isLocked               Boolean  @default(false)
+  lockedTillDate         DateTime?
+  multiSessionCount      Int      @default(1) @db.SmallInt
+
+  profilePictureUrl      String?
+  privacyPolicyVersion   String?
+  metaData               Json?
+
+  tenantId   String?
+  tenant     Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  personId   String?  @unique
+  person     Person?  @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+  createdBy  String
+  updatedAt  DateTime @updatedAt
+  updatedBy  String
+
+  clinics              UserClinic[]
+  auditLogs            AuditLog[]
+  notificationSettings NotificationSetting?
+  notifications        Notification[] @relation("NotificationToUser")
+
+  userRoles            UserRole[]
+  visits               Visit[] @relation("UserVisit") 
+  prescriptions        Prescription[]
+
+  addressId String?
+  address   Address? @relation("UserAddress", fields: [addressId], references: [id])
+}
+
+model UserClinic {
+  id        String   @id @default(cuid())
+  userId    String
+  clinicId  String
+  roleInClinic String
+  createdAt DateTime @default(now())
+
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic    Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clinicId])
+}
+
+model NotificationSetting {
+  id         String                @id @default(cuid())
+  userId     String                @unique
+  user       User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channels   NotificationChannel[] @default([])
+  smsOptIn   Boolean               @default(true)
+  emailOptIn Boolean               @default(true)
+}
+
+//////////////////////////
+// ADDRESS
+//////////////////////////
+model Address {
+  id              String   @id @default(cuid())
+  address         String
+  townCode        String
+  town            String
+  pin             String
+  subDistrictCode String
+  subDistrict     String
+  districtCode    String
+  district        String
+  stateCode       String
+  state           String
+  countryId       String
+  countryName     String
+  geoLocation     Json?
+  createdAt       DateTime @default(now())
+  createdBy       String
+  updatedAt       DateTime @updatedAt
+  updatedBy       String
+
+  tenants  Tenant[]  @relation("TenantAddress")
+  clinics  Clinic[]  @relation("ClinicAddress")
+  patients Patient[] @relation("PatientAddress")
+  users    User[]    @relation("UserAddress")
+  persons  Person[]  @relation("PersonAddress")
+}
+
+//////////////////////////
+// CLINIC
+//////////////////////////
+model Clinic {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name       String
+  clinicType PatientType
+  isActive   Boolean @default(true)
+
+  addressId String?
+  address   Address? @relation("ClinicAddress", fields: [addressId], references: [id])
+
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctors       UserClinic[]
+  patients      Patient[]      @relation("ClinicPatients")
+  appointments  Appointment[]  @relation("ClinicAppointments")
+  visits        Visit[]        @relation("ClinicVisits")
+  notifications Notification[] @relation("NotificationToClinic")
+  settings      ClinicSetting?
+  clinicConfig  ClinicConfig?
+
+  envData       EnvData[]     // NEW LINK
+
+  @@index([tenantId])
+}
+
+model ClinicSetting {
+  id                  String  @id @default(cuid())
+  clinicId            String  @unique
+  clinic              Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  timezone            String? @default("Asia/Kolkata")
+  offlineAllowed      Boolean @default(true)
+  defaultLanguage     String? @default("en")
+  dataRetentionMonths Int?    @default(60)
+  metadata            Json?
+}
+
+//////////////////////////
+// OWNER
+//////////////////////////
+model Owner {
+  id        String  @id @default(cuid())
+  personId  String  @unique
+  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  ownerType String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  animals Patient[] @relation("OwnerAnimals")
+
+  @@index([tenantId])
+  @@map("owners")
+}
+
+//////////////////////////
+// PATIENT (ANIMAL/HUMAN RECORD)
+//////////////////////////
+model Patient {
+  id        String @id @default(cuid())
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clinicId  String?
+  clinic    Clinic? @relation("ClinicPatients", fields: [clinicId], references: [id], onDelete: Cascade)
+  pseudonymId String @unique
+  type        PatientType
+
+  age      Int?
+  sex      String?
+  species  Species?
+  breed    String?
+
+  hasIdentifyingInfo Boolean @default(false)
+  externalId         String?
+
+  ownerId String?
+  owner   Owner?  @relation("OwnerAnimals", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  identities   PatientIdentity?
+  visits       Visit[]
+  appointments Appointment[]
+  vaccinations Vaccination[]
+  consents     Consent[]
+  notes        PatientNote[]
+
+  addressId String?
+  address   Address? @relation("PatientAddress", fields: [addressId], references: [id])
+
+
+  notifications Notification[] @relation("NotificationToPatient")
+  exposureEvents ExposureEvent[] // NEW LINK
+
+  @@unique([clinicId, externalId], name: "clinic_external_unique")
+  @@index([tenantId])
+  @@index([pseudonymId])
+}
+
+model PatientIdentity {
+  id        String  @id @default(cuid())
+  patientId String  @unique
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  personId  String? @unique
+  person    Person? @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  nameCipher         String?
+  phoneCipher        String?
+  emailCipher        String?
+  addressCipher      String?
+  governmentIdCipher String?
+
+  createdAt DateTime @default(now())
+}
+
+model PatientNote {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  authorId  String?
+  text      String
+  createdAt DateTime @default(now())
+}
+
+//////////////////////////
+// VISITS
+//////////////////////////
+model Visit {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clinicId String
+  clinic   Clinic  @relation("ClinicVisits", fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  doctorId String?
+  doctor   User?   @relation("UserVisit", fields: [doctorId], references: [id], onDelete: SetNull)
+
+  visitType VisitType @default(CLINIC)
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  symptoms Json?
+  vitals   Json?
+  notes    String?
+  workflowState String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  diagnoses     Diagnosis[]
+  prescriptions Prescription[]
+  labOrders     LabOrder[]
+
+  exposureEvents ExposureEvent[] // NEW LINK
+
+  nextVisitAt DateTime?
+
+  @@index([tenantId])
+  @@index([clinicId])
+  @@index([patientId])
+  @@index([startedAt])
+}
+
+model Diagnosis {
+  id      String @id @default(cuid())
+  visitId String
+  visit   Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  providerId String?
+  icdCode    String
+  snomedId   String?
+  label      String
+  primary    Boolean @default(false)
+  confidence Float?
+  status     String?
+  notes      String?
+  createdAt  DateTime @default(now())
+}
+
+model Prescription {
+  id      String @id @default(cuid())
+  visitId String
+  visit   Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  prescriberId String?
+  prescriber   User? @relation(fields: [prescriberId], references: [id], onDelete: SetNull)
+
+  diagnosisId  String?
+  items        Json
+  instructions String?
+  createdAt    DateTime @default(now())
+}
+
+model LabOrder {
+  id      String @id @default(cuid())
+  visitId String
+  visit   Visit @relation(fields: [visitId], references: [id], onDelete: Cascade)
+
+  tests     Json
+  results   Json?
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//////////////////////////
+// APPOINTMENTS
+//////////////////////////
+model Appointment {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clinicId String
+  clinic   Clinic  @relation("ClinicAppointments", fields: [clinicId], references: [id], onDelete: Cascade)
+
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  bookedById String?
+  slotStart  DateTime
+  slotEnd    DateTime
+  status     String   @default("SCHEDULED")
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([clinicId, slotStart])
+}
+
+//////////////////////////
+// VACCINATION
+//////////////////////////
+model Vaccination {
+  id        String @id @default(cuid())
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  vaccineName    String
+  batchNo        String?
+  givenAt        DateTime
+  nextDueAt      DateTime?
+  administeredBy String?
+  notes          String?
+
+  createdAt DateTime @default(now())
+
+  @@index([patientId])
+}
+
+//////////////////////////
+// CONSENT
+//////////////////////////
+model Consent {
+  id        String @id @default(cuid())
+  patientId String
+  patient   Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  consentFor String
+  status     ConsentStatus @default(PENDING)
+
+  givenByUserId String?
+  givenAt       DateTime?
+  revokedAt     DateTime?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([patientId, consentFor])
+}
+
+//////////////////////////
+// ANALYTICS EVENTS
+//////////////////////////
+model DataEvent {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  sourceType       String
+  sourceId         String
+  species          Species?
+  patientPseudonym String
+  diseaseCode      String?
+  timestamp        DateTime @default(now())
+  location         Json?
+  payload          Json?
+  processedAt      DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([tenantId, timestamp])
+  @@index([diseaseCode])
+}
+
+model OutbreakPrediction {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  predictedAt  DateTime @default(now())
+  targetWindow Json
+  diseaseCode  String
+  location     Json
+  riskScore    Float
+  modelVersion String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, diseaseCode])
+}
+
+//////////////////////////
+// NEW MODELS — OneHealth Intelligence Layer
+//////////////////////////
+model ExposureEvent {
+  id        String   @id @default(cuid())
+
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  personId  String?
+  person    Person?  @relation(fields: [personId], references: [id], onDelete: SetNull)
+
+  patientId String?
+  patient   Patient? @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  visitId   String?
+  visit     Visit?   @relation(fields: [visitId], references: [id], onDelete: SetNull)
+
+  exposureType String
+  description  String?
+  severity     String?
+
+  location     Json?
+  metadata     Json?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([personId])
+  @@index([patientId])
+  @@index([visitId])
+}
+
+model EnvData {
+  id        String   @id @default(cuid())
+
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clinicId  String?
+  clinic    Clinic?  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  recordedAt DateTime @default(now())
+  location    Json?
+
+  temperature Float?
+  humidity    Float?
+  rainfall    Float?
+
+  airQuality   Json?
+  waterQuality Json?
+  soilQuality  Json?
+
+  vectorData   Json?
+  metadata     Json?
+
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([clinicId])
+  @@index([recordedAt])
+}
+
+model DiseaseRegistry {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  category  String       // zoonotic, vector-borne, foodborne, etc.
+  hostSpecies Species[]
+  description String?
+  transmission Json?
+  symptoms     Json?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+}
+
+//////////////////////////
+// NOTIFICATIONS
+//////////////////////////
+model Notification {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clinicId String?
+  clinic   Clinic? @relation("NotificationToClinic", fields: [clinicId], references: [id], onDelete: Cascade)
+  recipientUserId     String?
+  recipientPatientPid String?
+
+  recipientUser    User?    @relation("NotificationToUser", fields: [recipientUserId], references: [id], onDelete: Cascade)
+  recipientPatient Patient? @relation("NotificationToPatient", fields: [recipientPatientPid], references: [pseudonymId], onDelete: Cascade)
+
+  channel NotificationChannel
+  title   String
+  body    String
+  data    Json?
+  status  String @default("PENDING")
+  sentAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([clinicId])
+}
+
+//////////////////////////
+// AUDIT LOG
+//////////////////////////
+model AuditLog {
+  id       String @id @default(cuid())
+  userId   String?
+  user     User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  tenantId String?
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  action     String
+  resource   String
+  resourceId String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId])
+}
+
+//////////////////////////
+// LOOKUP MODELS
+//////////////////////////
+model ClinicConfig {
+  id        String   @id @default(cuid())
+  clinicId  String   @unique
+  clinic    Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  config    Json
+  updatedAt DateTime @updatedAt
+}
+
+model LookupICD {
+  id       String  @id @default(cuid())
+  icdCode  String  @unique
+  label    String
+  system   String?
+  metadata Json?
+}
