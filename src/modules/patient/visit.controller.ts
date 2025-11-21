@@ -144,6 +144,137 @@ const logger = getModuleLogger('visit-controller');
  *           example: "Visit created successfully"
  *         data:
  *           $ref: '#/components/schemas/VisitResponse'
+ *     
+ *     DiagnosisInput:
+ *       type: object
+ *       required:
+ *         - icdCode
+ *         - label
+ *       properties:
+ *         providerId:
+ *           type: string
+ *           description: Provider ID (optional)
+ *         icdCode:
+ *           type: string
+ *           description: ICD-10 diagnosis code
+ *           example: "A00"
+ *         snomedId:
+ *           type: string
+ *           description: SNOMED CT identifier (optional)
+ *           example: "123456"
+ *         label:
+ *           type: string
+ *           description: Human-readable diagnosis label
+ *           example: "Cholera"
+ *         primary:
+ *           type: boolean
+ *           description: Is this the primary diagnosis
+ *           example: true
+ *         confidence:
+ *           type: number
+ *           minimum: 0
+ *           maximum: 1
+ *           description: Confidence level (0-1)
+ *           example: 0.9
+ *         status:
+ *           type: string
+ *           enum: [provisional, confirmed, ruled-out]
+ *           description: Diagnosis status
+ *           example: "confirmed"
+ *         notes:
+ *           type: string
+ *           maxLength: 500
+ *           description: Additional notes
+ *           example: "Strong symptoms"
+ *     
+ *     PrescriptionItem:
+ *       type: object
+ *       required:
+ *         - medicine
+ *         - dose
+ *         - frequency
+ *         - duration
+ *       properties:
+ *         medicine:
+ *           type: string
+ *           description: Medicine name
+ *           example: "Paracetamol"
+ *         dose:
+ *           type: string
+ *           description: Dosage amount
+ *           example: "500 mg"
+ *         frequency:
+ *           type: string
+ *           description: How often to take
+ *           example: "2 times/day"
+ *         duration:
+ *           type: string
+ *           description: How long to take
+ *           example: "5 days"
+ *     
+ *     PrescriptionInput:
+ *       type: object
+ *       required:
+ *         - items
+ *       properties:
+ *         prescriberId:
+ *           type: string
+ *           description: Prescriber ID (optional)
+ *         diagnosisId:
+ *           type: string
+ *           description: Related diagnosis ID (optional)
+ *         items:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/PrescriptionItem'
+ *           minItems: 1
+ *           description: List of prescription items
+ *         instructions:
+ *           type: string
+ *           maxLength: 1000
+ *           description: Additional instructions
+ *           example: "Take after meals"
+ *     
+ *     VisitDetailsRequest:
+ *       type: object
+ *       required:
+ *         - visitId
+ *       properties:
+ *         visitId:
+ *           type: string
+ *           description: Existing visit ID
+ *           example: "VISIT123"
+ *         diagnoses:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/DiagnosisInput'
+ *           description: List of diagnoses to add
+ *         prescriptions:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/PrescriptionInput'
+ *           description: List of prescriptions to add
+ *     
+ *     VisitDetailsResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: true
+ *         message:
+ *           type: string
+ *           example: "Visit updated successfully"
+ *         data:
+ *           type: object
+ *           properties:
+ *             diagnoses:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             prescriptions:
+ *               type: array
+ *               items:
+ *                 type: object
  *   
  *   tags:
  *     - name: Visits
@@ -418,6 +549,177 @@ export const VisitController = {
         res,
         error instanceof Error ? error.message : 'Failed to fetch visits',
         500,
+        process.env.NODE_ENV === 'development' ? String(error) : undefined
+      );
+    }
+  },
+
+  /**
+   * @swagger
+   * /patients/visits/details:
+   *   post:
+   *     tags: [Visits]
+   *     summary: Add diagnoses and prescriptions to an existing visit
+   *     description: |
+   *       Adds multiple diagnoses and/or prescriptions to an already existing visit.
+   *       This endpoint is used after visit creation to add medical details.
+   *       
+   *       **Business Logic:**
+   *       - Visit must already exist in the system
+   *       - At least one diagnosis or prescription must be provided
+   *       - All operations are performed within a database transaction
+   *       - Prescription items are stored as JSON in the database
+   *       
+   *       **Validation:**
+   *       - Validates visit existence
+   *       - Validates required fields for diagnoses (icdCode, label)
+   *       - Validates required fields for prescriptions (items with medicine, dose, frequency, duration)
+   *       - Confidence values must be between 0 and 1
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             $ref: '#/components/schemas/VisitDetailsRequest'
+   *           examples:
+   *             fullDetails:
+   *               summary: Visit with both diagnoses and prescriptions
+   *               value:
+   *                 visitId: "VISIT123"
+   *                 diagnoses:
+   *                   - providerId: "D1"
+   *                     icdCode: "A00"
+   *                     snomedId: "123456"
+   *                     label: "Cholera"
+   *                     primary: true
+   *                     confidence: 0.9
+   *                     status: "confirmed"
+   *                     notes: "Strong symptoms"
+   *                   - providerId: "D1"
+   *                     icdCode: "B00"
+   *                     label: "Viral Infection"
+   *                 prescriptions:
+   *                   - prescriberId: "D1"
+   *                     items:
+   *                       - medicine: "Paracetamol"
+   *                         dose: "500 mg"
+   *                         frequency: "2 times/day"
+   *                         duration: "5 days"
+   *                     instructions: "Take after meals"
+   *                   - prescriberId: "D1"
+   *                     items:
+   *                       - medicine: "Vitamin C"
+   *                         dose: "1 tablet"
+   *                         frequency: "once/day"
+   *                         duration: "10 days"
+   *             diagnosisOnly:
+   *               summary: Visit with only diagnoses
+   *               value:
+   *                 visitId: "VISIT123"
+   *                 diagnoses:
+   *                   - icdCode: "J06.9"
+   *                     label: "Acute upper respiratory infection"
+   *                     primary: true
+   *                     status: "confirmed"
+   *             prescriptionOnly:
+   *               summary: Visit with only prescriptions
+   *               value:
+   *                 visitId: "VISIT123"
+   *                 prescriptions:
+   *                   - items:
+   *                       - medicine: "Amoxicillin"
+   *                         dose: "250 mg"
+   *                         frequency: "3 times/day"
+   *                         duration: "7 days"
+   *                     instructions: "Complete the full course"
+   *     responses:
+   *       200:
+   *         description: Visit details added successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/VisitDetailsResponse'
+   *             example:
+   *               success: true
+   *               message: "Visit updated successfully"
+   *               data:
+   *                 diagnoses:
+   *                   - id: "diag-abc123"
+   *                     visitId: "VISIT123"
+   *                     providerId: "D1"
+   *                     icdCode: "A00"
+   *                     snomedId: "123456"
+   *                     label: "Cholera"
+   *                     primary: true
+   *                     confidence: 0.9
+   *                     status: "confirmed"
+   *                     notes: "Strong symptoms"
+   *                     createdAt: "2025-11-21T10:30:00.000Z"
+   *                 prescriptions:
+   *                   - id: "presc-def456"
+   *                     visitId: "VISIT123"
+   *                     prescriberId: "D1"
+   *                     items:
+   *                       - medicine: "Paracetamol"
+   *                         dose: "500 mg"
+   *                         frequency: "2 times/day"
+   *                         duration: "5 days"
+   *                     instructions: "Take after meals"
+   *                     createdAt: "2025-11-21T10:30:00.000Z"
+   *       400:
+   *         description: Bad Request - Validation errors or visit not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: "Visit not found"
+   *                 error:
+   *                   type: string
+   *                   example: "Visit with provided ID does not exist"
+   *       401:
+   *         description: Unauthorized - Missing or invalid JWT token
+   *       500:
+   *         description: Internal Server Error
+   */
+  async addVisitDetails(req: Request, res: Response) {
+    try {
+      const result = await VisitService.addVisitDetails(
+        req.body,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+
+      logger.debug('✅ Visit details added successfully', {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        visitId: req.body.visitId,
+        diagnosesCount: result.data.diagnoses.length,
+        prescriptionsCount: result.data.prescriptions.length,
+      });
+
+      successResponse(res, result, 200);
+    } catch (error) {
+      logger.error('❌ Add visit details error', {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        error,
+      });
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add visit details';
+      const statusCode = getStatusCodeFromError(errorMessage);
+
+      errorResponse(
+        res,
+        errorMessage,
+        statusCode,
         process.env.NODE_ENV === 'development' ? String(error) : undefined
       );
     }

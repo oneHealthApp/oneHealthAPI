@@ -304,4 +304,155 @@ export const VisitRepository = {
       return false;
     }
   },
+
+  /**
+   * Find visit by ID for details operations
+   */
+  async findVisitById(visitId: string, requestId: string): Promise<any | null> {
+    try {
+      logger.debug('Finding visit by ID for details', { visitId, requestId });
+
+      const visit = await prisma.visit.findUnique({
+        where: { id: visitId },
+        select: {
+          id: true,
+          tenantId: true,
+          clinicId: true,
+          patientId: true,
+          doctorId: true,
+          workflowState: true,
+        },
+      });
+
+      return visit;
+    } catch (error) {
+      logger.error('Error finding visit by ID', { error, visitId, requestId });
+      throw error;
+    }
+  },
+
+  /**
+   * Insert multiple diagnoses for a visit
+   */
+  async insertDiagnoses(visitId: string, diagnoses: any[], requestId: string): Promise<any[]> {
+    try {
+      logger.debug('Inserting diagnoses', { visitId, count: diagnoses.length, requestId });
+
+      const diagnosisData = diagnoses.map(diagnosis => ({
+        visitId,
+        providerId: diagnosis.providerId || null,
+        icdCode: diagnosis.icdCode,
+        snomedId: diagnosis.snomedId || null,
+        label: diagnosis.label,
+        primary: diagnosis.primary || false,
+        confidence: diagnosis.confidence || null,
+        status: diagnosis.status || null,
+        notes: diagnosis.notes || null,
+      }));
+
+      const result = await prisma.diagnosis.createMany({
+        data: diagnosisData,
+      });
+
+      // Get the created diagnoses
+      const createdDiagnoses = await prisma.diagnosis.findMany({
+        where: {
+          visitId,
+          createdAt: {
+            gte: new Date(Date.now() - 1000), // Get diagnoses created in the last second
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: diagnoses.length,
+      });
+
+      logger.info('Diagnoses inserted successfully', {
+        visitId,
+        count: result.count,
+        requestId,
+      });
+
+      return createdDiagnoses;
+    } catch (error) {
+      logger.error('Error inserting diagnoses', {
+        error,
+        visitId,
+        diagnoses,
+        requestId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Insert multiple prescriptions for a visit
+   */
+  async insertPrescriptions(visitId: string, prescriptions: any[], requestId: string): Promise<any[]> {
+    try {
+      logger.debug('Inserting prescriptions', {
+        visitId,
+        count: prescriptions.length,
+        requestId,
+      });
+
+      const prescriptionData = prescriptions.map(prescription => ({
+        visitId,
+        prescriberId: prescription.prescriberId || null,
+        diagnosisId: prescription.diagnosisId || null,
+        items: JSON.stringify(prescription.items),
+        instructions: prescription.instructions || null,
+      }));
+
+      const result = await prisma.prescription.createMany({
+        data: prescriptionData,
+      });
+
+      // Get the created prescriptions
+      const createdPrescriptions = await prisma.prescription.findMany({
+        where: {
+          visitId,
+          createdAt: {
+            gte: new Date(Date.now() - 1000), // Get prescriptions created in the last second
+          },
+        },
+        include: {
+          prescriber: {
+            select: {
+              id: true,
+              username: true,
+              emailId: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: prescriptions.length,
+      });
+
+      // Parse items JSON back to objects
+      const parsedPrescriptions = createdPrescriptions.map(prescription => ({
+        ...prescription,
+        items: JSON.parse(prescription.items as string),
+      }));
+
+      logger.info('Prescriptions inserted successfully', {
+        visitId,
+        count: result.count,
+        requestId,
+      });
+
+      return parsedPrescriptions;
+    } catch (error) {
+      logger.error('Error inserting prescriptions', {
+        error,
+        visitId,
+        prescriptions,
+        requestId,
+      });
+      throw error;
+    }
+  },
 };

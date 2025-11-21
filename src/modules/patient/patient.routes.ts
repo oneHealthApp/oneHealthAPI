@@ -83,6 +83,14 @@ router.post(
   VisitController.createVisit
 );
 
+// Add details (diagnoses and prescriptions) to existing visit
+router.post(
+  "/patients/visits/details",
+  jwtMiddleware,
+  validateRequest(VisitValidator.addDetails),
+  VisitController.addVisitDetails
+);
+
 // Get visit by ID
 router.get(
   "/patients/visits/:id",
