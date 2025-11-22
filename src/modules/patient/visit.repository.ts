@@ -1,5 +1,9 @@
 import { prisma } from '../../common';
-import { VisitCreateInput, VisitUpdateInput, VisitFilterOptions } from './visit.type';
+import {
+  VisitCreateInput,
+  VisitUpdateInput,
+  VisitFilterOptions,
+} from './visit.type';
 import { getModuleLogger } from '../../utils';
 import { VisitType, Prisma } from '@prisma/client';
 
@@ -23,7 +27,7 @@ export const VisitRepository = {
         doctor: data.doctorId ? { connect: { id: data.doctorId } } : undefined,
         visitType: data.visitType || VisitType.CLINIC,
         vitals: data.vitals ? JSON.stringify(data.vitals) : undefined,
-        symptoms: data.symptoms || null,
+        symptoms: data.symptoms ? JSON.parse(data.symptoms) : Prisma.JsonNull,
         notes: data.notes || null,
         workflowState: 'OPEN',
         startedAt: new Date(),
@@ -56,7 +60,10 @@ export const VisitRepository = {
         },
       });
 
-      logger.info('Visit created successfully', { visitId: visit.id, requestId });
+      logger.info('Visit created successfully', {
+        visitId: visit.id,
+        requestId,
+      });
       return visit;
     } catch (error) {
       logger.error('Error creating visit', { error, data, requestId });
@@ -119,18 +126,29 @@ export const VisitRepository = {
   /**
    * Update visit
    */
-  async updateVisit(id: string, data: VisitUpdateInput, requestId: string): Promise<any> {
+  async updateVisit(
+    id: string,
+    data: VisitUpdateInput,
+    requestId: string,
+  ): Promise<any> {
     try {
       logger.debug('Updating visit', { id, data, requestId });
 
       const updateData: Prisma.VisitUpdateInput = {
         ...data,
-        vitals: data.vitals ? JSON.stringify(data.vitals) : undefined,
+
+        vitals: data.vitals ?? Prisma.JsonNull,
+        symptoms: {
+          set: data.symptoms ?? null,
+        },
+
         updatedAt: new Date(),
       };
 
       if (data.doctorId !== undefined) {
-        updateData.doctor = data.doctorId ? { connect: { id: data.doctorId } } : { disconnect: true };
+        updateData.doctor = data.doctorId
+          ? { connect: { id: data.doctorId } }
+          : { disconnect: true };
       }
 
       const visit = await prisma.visit.update({
@@ -160,7 +178,10 @@ export const VisitRepository = {
         },
       });
 
-      logger.info('Visit updated successfully', { visitId: visit.id, requestId });
+      logger.info('Visit updated successfully', {
+        visitId: visit.id,
+        requestId,
+      });
       return visit;
     } catch (error) {
       logger.error('Error updating visit', { error, id, data, requestId });
@@ -171,7 +192,10 @@ export const VisitRepository = {
   /**
    * Get visits with filtering
    */
-  async getVisits(filters?: VisitFilterOptions, requestId?: string): Promise<any[]> {
+  async getVisits(
+    filters?: VisitFilterOptions,
+    requestId?: string,
+  ): Promise<any[]> {
     try {
       logger.debug('Fetching visits with filters', { filters, requestId });
 
@@ -184,7 +208,7 @@ export const VisitRepository = {
         if (filters.doctorId) where.doctorId = filters.doctorId;
         if (filters.visitType) where.visitType = filters.visitType;
         if (filters.workflowState) where.workflowState = filters.workflowState;
-        
+
         if (filters.startDate || filters.endDate) {
           where.startedAt = {};
           if (filters.startDate) where.startedAt.gte = filters.startDate;
@@ -290,14 +314,14 @@ export const VisitRepository = {
           },
         },
       });
-      
+
       if (!doctor) return false;
-      
+
       // Check if user has DOCTOR role
-      const hasdoctorRole = doctor.userRoles.some(ur => 
-        ur.role.roleName === 'DOCTOR' || ur.role.roleName === 'STAFF'
+      const hasdoctorRole = doctor.userRoles.some(
+        (ur) => ur.role.roleName === 'DOCTOR' || ur.role.roleName === 'STAFF',
       );
-      
+
       return hasdoctorRole;
     } catch (error) {
       logger.error('Error validating doctor', { error, doctorId });
@@ -334,11 +358,19 @@ export const VisitRepository = {
   /**
    * Insert multiple diagnoses for a visit
    */
-  async insertDiagnoses(visitId: string, diagnoses: any[], requestId: string): Promise<any[]> {
+  async insertDiagnoses(
+    visitId: string,
+    diagnoses: any[],
+    requestId: string,
+  ): Promise<any[]> {
     try {
-      logger.debug('Inserting diagnoses', { visitId, count: diagnoses.length, requestId });
+      logger.debug('Inserting diagnoses', {
+        visitId,
+        count: diagnoses.length,
+        requestId,
+      });
 
-      const diagnosisData = diagnoses.map(diagnosis => ({
+      const diagnosisData = diagnoses.map((diagnosis) => ({
         visitId,
         providerId: diagnosis.providerId || null,
         icdCode: diagnosis.icdCode,
@@ -389,7 +421,11 @@ export const VisitRepository = {
   /**
    * Insert multiple prescriptions for a visit
    */
-  async insertPrescriptions(visitId: string, prescriptions: any[], requestId: string): Promise<any[]> {
+  async insertPrescriptions(
+    visitId: string,
+    prescriptions: any[],
+    requestId: string,
+  ): Promise<any[]> {
     try {
       logger.debug('Inserting prescriptions', {
         visitId,
@@ -397,7 +433,7 @@ export const VisitRepository = {
         requestId,
       });
 
-      const prescriptionData = prescriptions.map(prescription => ({
+      const prescriptionData = prescriptions.map((prescription) => ({
         visitId,
         prescriberId: prescription.prescriberId || null,
         diagnosisId: prescription.diagnosisId || null,
@@ -433,7 +469,7 @@ export const VisitRepository = {
       });
 
       // Parse items JSON back to objects
-      const parsedPrescriptions = createdPrescriptions.map(prescription => ({
+      const parsedPrescriptions = createdPrescriptions.map((prescription) => ({
         ...prescription,
         items: JSON.parse(prescription.items as string),
       }));

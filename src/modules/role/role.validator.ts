@@ -2,65 +2,61 @@ import Joi from 'joi';
 
 /**
  * Joi validation schema for Role operations.
- **/
+ */
 export const RoleValidator = {
-  // Strict validation for CREATE (all fields required)
+  // 1. Create  Role
   create: Joi.object({
-    roleName: Joi.string().required().messages({
-      'string.empty': 'Role name is required',
-      'any.required': 'Role name is required',
-    }),
-    roleCategory: Joi.string().optional().allow('').messages({
-      'string.base': 'Role category must be a string',
-    }),
-    priority: Joi.number()
-      .integer()
-      .strict()
-      .min(0)
-      .max(32767)
-      .required()
-      .messages({
-        'number.base':
-          'Priority must be a number (strict mode: no strings allowed)',
-        'number.integer': 'Priority must be an integer',
-        'number.min': 'Priority must be at least 0',
-        'number.max': 'Priority cannot exceed 32767',
-        'any.required': 'Priority is required',
-      }),
-    createdBy: Joi.string().required().messages({
-      'string.empty': 'Created by is required',
-      'any.required': 'Created by is required',
-    }),
-    updatedBy: Joi.string().required().messages({
-      'string.empty': 'Updated by is required',
-      'any.required': 'Updated by is required',
-    }),
+    roleName: Joi.string().required(),
+    roleCategory: Joi.string().required(),
+    priority: Joi.number().integer().min(1).max(10).required(),
+    isActive: Joi.boolean().optional().default(true),
+    createdBy: Joi.string().required(),
+    updatedBy: Joi.string().required(),
   }),
 
-  // Loose validation for UPDATE (only updatedBy required, others optional)
+  //  Update Role
   update: Joi.object({
-    roleName: Joi.string().optional().messages({
-      'string.empty': 'Role name cannot be empty',
-    }),
-    roleCategory: Joi.string().optional().allow('').messages({
-      'string.base': 'Role category must be a string',
-    }),
-    priority: Joi.number()
-      .integer()
-      .strict()
-      .min(0)
-      .max(32767)
-      .optional()
-      .messages({
-        'number.base':
-          'Priority must be a number (strict mode: no strings allowed)',
-        'number.integer': 'Priority must be an integer',
-        'number.min': 'Priority must be at least 0',
-        'number.max': 'Priority cannot exceed 32767',
-      }),
-    updatedBy: Joi.string().required().messages({
-      'string.empty': 'Updated by is required',
-      'any.required': 'Updated by is required',
-    }),
+    roleName: Joi.string().optional(),
+    roleCategory: Joi.string().optional(),
+    priority: Joi.number().integer().min(1).max(10).optional(),
+    isActive: Joi.boolean().optional(),
+    updatedBy: Joi.string().required(),
+  }),
+
+  // 3. Attach Menus to Role
+  // RoleValidator.ts
+  attachMenus: Joi.object({
+    roleId: Joi.string().required(),
+    menus: Joi.array()
+      .items(
+        Joi.object({
+          menuId: Joi.string().required(),
+          permissions: Joi.array()
+            .items(Joi.string().valid('create', 'read', 'update', 'delete'))
+            .required(),
+        }),
+      )
+      .min(1)
+      .required(),
+    createdBy: Joi.string().required(),
+    updatedBy: Joi.string().required(),
+  }),
+
+  // 4. Detach Menus from Role
+  detachMenus: Joi.object({
+    roleId: Joi.string().required(),
+    menuIds: Joi.array().items(Joi.string().required()).min(1).required(),
+    createdBy: Joi.string().required(),
+    updatedBy: Joi.string().required(),
+  }),
+
+  // 5. Get Menus for Role (usually validated via param middleware, but added for completeness)
+  getMenusByRole: Joi.object({
+    id: Joi.string().required(),
+  }),
+
+  // 6. Clear Role Menu Cache
+  clearRoleMenuCache: Joi.object({
+    id: Joi.string().required(),
   }),
 };
