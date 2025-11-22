@@ -228,11 +228,12 @@ export const UserService = {
       }
 
       // Map roles with full information
-      const roles = user.userRoles?.map((ur: { role: { id: string; roleName: string; roleCategory?: string | null } }) => ({
-        roleId: ur.role.id,
-        roleName: ur.role.roleName,
-        roleCategory: ur.role.roleCategory,
-      })) || [];
+            const roles = user.userRoles?.map((ur: { role: { id: string; roleName: string; roleCategory?: string | null }; priority?: number }) => ({
+              roleId: ur.role.id,
+              roleName: ur.role.roleName,
+              roleCategory: ur.role.roleCategory,
+              priority: ur.priority ?? null,
+            })) || [];
       
 
       const accessToken = jwt.sign(

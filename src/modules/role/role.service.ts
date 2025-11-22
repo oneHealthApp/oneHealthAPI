@@ -59,12 +59,11 @@ export const RoleService = {
     try {
       logger.debug('Fetching all roles', { requestId, userId });
 
-      const cacheKey = 'role:all';
-      const cached = await redisCacheHelper.get(cacheKey);
-      if (cached) return cached;
+      
+    
 
       const roles = await RoleRepository.getAll(requestId, userId);
-      await redisCacheHelper.set(cacheKey, roles, 300);
+      
       return roles;
     } catch (error) {
       logger.error('Error fetching all roles', { error, requestId, userId });
@@ -436,9 +435,7 @@ export const RoleService = {
         userId,
       });
 
-      const cacheKey = `role:${roleId}:menus`;
-      const cached = await redisCacheHelper.get(cacheKey);
-      if (cached) return cached;
+      
 
       const role = await RoleRepository.get(roleId, requestId, userId);
       if (!role) throw new Error('Role not found');
@@ -450,7 +447,7 @@ export const RoleService = {
         requestId,
         userId,
       );
-      await redisCacheHelper.set(cacheKey, menusWithPermissions, 300);
+     
       return menusWithPermissions;
     } catch (error) {
       logger.error('Error fetching role menus', {

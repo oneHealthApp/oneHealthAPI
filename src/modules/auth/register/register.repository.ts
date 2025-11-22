@@ -83,6 +83,7 @@ export const RegisterRepository = {
                   id: true,
                   roleName: true,
                   roleCategory: true,
+                  priority: true,
                 },
               },
             },

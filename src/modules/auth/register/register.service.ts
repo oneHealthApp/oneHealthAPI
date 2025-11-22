@@ -96,7 +96,8 @@ export const RegisterService = {
         roles: (user as any).userRoles?.map((ur: any) => ({
           roleId: ur.role.id,
           roleName: ur.role.roleName,
-          roleCategory: ur.role.roleCategory
+          roleCategory: ur.role.roleCategory,
+          priority: ur.role.priority
         })) || [],
         // Include tenant information when available
         ...((user as any).tenant && {
