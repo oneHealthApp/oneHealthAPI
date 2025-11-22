@@ -15,9 +15,7 @@ const JWT_REFRESH_SECRET = env.JWT_REFRESH_SECRET;
 const JWT_REFRESH_EXPIRY = env.JWT_REFRESH_EXPIRY || '7d';
 const PASSWORD_EXPIRY_DAYS = parseInt(process.env.PASSWORD_EXPIRY_DAYS || '90');
 
-type SafeUser = Omit<User, 'passwordHash'> & {
-  roles: string[];
-};
+type SafeUser = any;
 
 export const UserService = {
   async register(input: UserCreateInput, requestId: string, userId: string): Promise<{
@@ -229,7 +227,12 @@ export const UserService = {
         throw new Error('Password expired. Please reset your password.');
       }
 
-      const roles = user.userRoles?.map((ur: { roleId: string }) => ur.roleId) || [];
+      // Map roles with full information
+      const roles = user.userRoles?.map((ur: { role: { id: string; roleName: string; roleCategory?: string | null } }) => ({
+        roleId: ur.role.id,
+        roleName: ur.role.roleName,
+        roleCategory: ur.role.roleCategory,
+      })) || [];
       
 
       const accessToken = jwt.sign(
@@ -254,12 +257,36 @@ export const UserService = {
         7 * 24 * 60 * 60,
       );
 
-      const { passwordHash, ...rest } = user;
+      const { passwordHash, userRoles, tenant, clinics, ...rest } = user;
+
+      // Construct enhanced user response with tenant and clinic information
+      const userResponse = {
+        ...rest,
+        roles,
+        tenantId: user.tenantId || user.tenant?.id || null,
+        clinicId: user.clinics?.[0]?.clinic?.id || null,
+        // Include tenant information when available
+        ...(user.tenant && {
+          tenant: {
+            id: user.tenant.id,
+            name: user.tenant.name,
+            slug: user.tenant.slug,
+          },
+        }),
+        // Include clinic information when available
+        ...(user.clinics && user.clinics.length > 0 && {
+          clinics: user.clinics.map((userClinic) => ({
+            id: userClinic.clinic.id,
+            name: userClinic.clinic.name,
+            clinicType: userClinic.clinic.clinicType,
+          })),
+        }),
+      };
 
       logger.info('Login successful', { username: user.username, requestId });
 
       return {
-        user: { ...rest, roles },
+        user: userResponse,
         accessToken,
         refreshToken,
       };

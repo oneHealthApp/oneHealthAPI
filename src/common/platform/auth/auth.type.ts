@@ -24,6 +24,21 @@ export type LoginResponse = {
       roleName: string;
       roleCategory?: string;
     }>;
+    // Enhanced role information for backward compatibility
+    primaryRoleId?: string;
+    primaryRoleName?: string;
+    // Tenant information
+    tenantId?: string;
+    tenantName?: string;
+    // Clinic information
+    clinicId?: string;
+    clinicName?: string;
+    clinicType?: string;
+    clinics?: Array<{
+      id: string;
+      name: string;
+      type: string;
+    }>;
     shgMemberships?: SHGMembershipResponse[];
     profilePictureUrl?: string;
   };

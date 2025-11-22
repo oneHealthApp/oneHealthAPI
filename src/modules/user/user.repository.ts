@@ -17,8 +17,35 @@ export const UserRepository = {
           ],
         },
         include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          clinics: {
+            include: {
+              clinic: {
+                select: {
+                  id: true,
+                  name: true,
+                  clinicType: true,
+                  tenantId: true,
+                },
+              },
+            },
+          },
           userRoles: {
-            select: { roleId: true }, // Only get role IDs
+            include: {
+              role: {
+                select: {
+                  id: true,
+                  roleName: true,
+                  roleCategory: true,
+                },
+              },
+            },
           },
         },
       });
@@ -31,7 +58,19 @@ export const UserRepository = {
   async findUserById(id: string) {
     return prisma.user.findUnique({
       where: { id },
-      include: { userRoles: true },
+      include: { 
+        userRoles: {
+          include: {
+            role: {
+              select: {
+                id: true,
+                roleName: true,
+                roleCategory: true,
+              },
+            },
+          },
+        },
+      },
     });
   },
 
@@ -49,7 +88,19 @@ export const UserRepository = {
         updatedBy: verifiedBy,
         updatedAt: new Date(),
       },
-      include: { userRoles: true },
+      include: { 
+        userRoles: {
+          include: {
+            role: {
+              select: {
+                id: true,
+                roleName: true,
+                roleCategory: true,
+              },
+            },
+          },
+        },
+      },
     });
   },
 
@@ -58,7 +109,17 @@ export const UserRepository = {
       return await prisma.user.create({
         data: input,
         include: {
-          userRoles: true,
+          userRoles: {
+            include: {
+              role: {
+                select: {
+                  id: true,
+                  roleName: true,
+                  roleCategory: true,
+                },
+              },
+            },
+          },
         },
       });
     } catch (error) {

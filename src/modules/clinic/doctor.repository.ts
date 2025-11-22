@@ -170,9 +170,33 @@ export const DoctorRepository = {
           }
         });
 
+        // 12. Find DOCTOR role
+        const doctorRole = await tx.role.findFirst({
+          where: {
+            roleName: 'DOCTOR',
+            isActive: true
+          }
+        });
+
+        if (!doctorRole) {
+          throw new Error('DOCTOR role not found in system');
+        }
+
+        // 13. Create UserRole assignment
+        await tx.userRole.create({
+          data: {
+            userId: user.id,
+            roleId: doctorRole.id,
+            priority: 1,
+            createdBy,
+            updatedBy: createdBy
+          }
+        });
+
         logger.info("Doctor created successfully", { 
           userId: user.id, 
           personId: person.id, 
+          roleId: doctorRole.id,
           requestId 
         });
 
@@ -180,7 +204,9 @@ export const DoctorRepository = {
           success: true,
           message: "Doctor created successfully",
           userId: user.id,
-          personId: person.id
+          personId: person.id,
+          roleId: doctorRole.id,
+          roleName: doctorRole.roleName
         };
       });
 

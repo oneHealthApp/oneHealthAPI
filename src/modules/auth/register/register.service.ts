@@ -91,11 +91,29 @@ export const RegisterService = {
         username: user.username,
         emailId: user.emailId || undefined,
         fullName: (user as any).person?.fullName || undefined,
+        tenantId: user.tenantId || (user as any).tenant?.id || null,
+        clinicId: (user as any).clinics?.[0]?.clinic?.id || null,
         roles: (user as any).userRoles?.map((ur: any) => ({
           roleId: ur.role.id,
           roleName: ur.role.roleName,
           roleCategory: ur.role.roleCategory
-        })) || []
+        })) || [],
+        // Include tenant information when available
+        ...((user as any).tenant && {
+          tenant: {
+            id: (user as any).tenant.id,
+            name: (user as any).tenant.name,
+            slug: (user as any).tenant.slug,
+          },
+        }),
+        // Include clinic information when available
+        ...((user as any).clinics && (user as any).clinics.length > 0 && {
+          clinics: (user as any).clinics.map((userClinic: any) => ({
+            id: userClinic.clinic.id,
+            name: userClinic.clinic.name,
+            clinicType: userClinic.clinic.clinicType,
+          })),
+        }),
       };
 
       const response: LoginResponse = {

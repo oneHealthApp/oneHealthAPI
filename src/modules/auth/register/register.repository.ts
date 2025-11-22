@@ -57,7 +57,36 @@ export const RegisterRepository = {
         },
         include: {
           person: true,
-          userRoles: { include: { role: true } }
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          clinics: {
+            include: {
+              clinic: {
+                select: {
+                  id: true,
+                  name: true,
+                  clinicType: true,
+                  tenantId: true,
+                },
+              },
+            },
+          },
+          userRoles: { 
+            include: { 
+              role: {
+                select: {
+                  id: true,
+                  roleName: true,
+                  roleCategory: true,
+                },
+              },
+            },
+          },
         }
       });
     } catch (error) {

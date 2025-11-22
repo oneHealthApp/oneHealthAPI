@@ -71,6 +71,8 @@ export interface DoctorCreateResponse {
   message: string;
   userId: string;
   personId: string;
+  roleId: string;
+  roleName: string;
 }
 
 export interface DoctorDetails {
