@@ -11,7 +11,7 @@ const logger = getModuleLogger('role-controller');
 export const RoleController = {
   /**
    * @swagger
-   * /platform/o/role:
+   *  /o/role:
    *   post:
    *     summary: Create a new role
    *     tags: [Role]
@@ -65,7 +65,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role:
+   * /o/role:
    *   get:
    *     summary: Get all roles
    *     tags: [Role]
@@ -112,7 +112,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/page:
+   *  /o/role/page:
    *   get:
    *     summary: Get paginated list of roles
    *     tags: [Role]
@@ -182,7 +182,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/{id}:
+   *  /o/role/{id}:
    *   get:
    *     summary: Get role by ID
    *     tags: [Role]
@@ -242,7 +242,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/{id}:
+   *  /o/role/{id}:
    *   put:
    *     summary: Update a role
    *     tags: [Role]
@@ -311,7 +311,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/{id}:
+   *  /o/role/{id}:
    *   delete:
    *     summary: Delete a role
    *     tags: [Role]
@@ -373,7 +373,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/role/filtered:
+   *  /role/filtered:
    *   get:
    *     summary: List roles filtered by active status
    *     tags: [Role]
@@ -426,7 +426,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/menu/attach:
+   *  /o/role/menu/attach:
    *   post:
    *     summary: Attach menus to a role with permissions
    *     tags: [Role]
@@ -512,7 +512,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/menu/detach:
+   *  /o/role/menu/detach:
    *   post:
    *     summary: Detach menus from a role
    *     tags: [Role]
@@ -583,7 +583,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/{id}/menus:
+   *  /o/role/{id}/menus:
    *   get:
    *     summary: Get menus with permissions for a role
    *     tags: [Role]
@@ -639,7 +639,7 @@ export const RoleController = {
 
   /**
    * @swagger
-   * /platform/o/role/cache/clear/{id}:
+   *  /o/role/cache/clear/{id}:
    *   post:
    *     summary: Clear role-menu cache by role ID
    *     tags: [Role]
