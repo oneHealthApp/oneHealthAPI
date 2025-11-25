@@ -1431,6 +1431,101 @@ export const pet_disease_master = [
   }
 ] as const;
 
+export const medicine_master = [
+  {
+    value: "human_insulatard_40iu",
+    label: "Human Insulatard 40IU/ml Suspension for Injection",
+    category: "Human Insulin Basal",
+    saltComposition: "Insulin Isophane (40IU)",
+    price: "₹133.93",
+    manufacturer: "Novo Nordisk India Pvt Ltd",
+    metadata: {
+      description: "Human Insulatard 40IU/ml Suspension for Injection is used to improve blood sugar control in adults and children with type 1 and type 2 diabetes mellitus. It is an intermediate-acting type of insulin that helps to lower blood sugar levels and reduce the chances of developing serious complications of diabetes.",
+      sideEffects: [
+        "Hypoglycemia (low blood glucose level)",
+        "Injection site allergic reaction",
+        "Lipodystrophy (skin thickening or pits at the injection site)",
+        "Weight gain",
+        "Edema (swelling)"
+      ],
+      drugInteractions: {
+        drugs: ["Benazepril", "Captopril", "Enalapril", "Fosinopril"],
+        brands: ["Apriace", "Capotril, Aceten, Angiopril", "Enatol, AB-Pril, Inopril", "Fovas"],
+        effects: ["MODERATE", "MODERATE", "MODERATE", "MODERATE"]
+      }
+    }
+  },
+  {
+    value: "insulin_40iu_injection",
+    label: "Insulin 40IU/ml Injection",
+    category: "Human Insulin Basal",
+    saltComposition: "Insulin Isophane (40IU)",
+    price: "₹121.91",
+    manufacturer: "Sun Pharmaceutical Industries Ltd",
+    metadata: {
+      description: "Insulin 40IU/ml Injection is used to improve blood sugar control in adults and children with type 1 and type 2 diabetes mellitus. It is an intermediate-acting type of insulin that helps to lower blood sugar levels and reduce the chances of developing serious complications of diabetes.",
+      sideEffects: [
+        "Hypoglycemia (low blood glucose level)",
+        "Injection site allergic reaction",
+        "Lipodystrophy (skin thickening or pits at the injection site)",
+        "Weight gain",
+        "Edema (swelling)"
+      ],
+      drugInteractions: {
+        drugs: ["Benazepril", "Captopril", "Enalapril", "Fosinopril"],
+        brands: ["Apriace", "Capotril, Aceten, Angiopril", "Enatol, AB-Pril, Inopril", "Fovas"],
+        effects: ["MODERATE", "MODERATE", "MODERATE", "MODERATE"]
+      }
+    }
+  },
+  {
+    value: "huminsulin_n_40iu",
+    label: "Huminsulin N 40IU/ml Injection",
+    category: "Human Insulin Basal",
+    saltComposition: "Insulin Isophane (40IU)",
+    price: "₹133.45",
+    manufacturer: "Eli Lilly and Company India Pvt Ltd",
+    metadata: {
+      description: "Huminsulin N 40IU/ml Injection is used to improve blood sugar control in adults and children with type 1 and type 2 diabetes mellitus. It is an intermediate-acting type of insulin that helps to lower blood sugar levels and reduce the chances of developing serious complications of diabetes.",
+      sideEffects: [
+        "Hypoglycemia (low blood glucose level)",
+        "Injection site allergic reaction",
+        "Lipodystrophy (skin thickening or pits at the injection site)",
+        "Weight gain",
+        "Edema (swelling)"
+      ],
+      drugInteractions: {
+        drugs: ["Benazepril", "Captopril", "Enalapril", "Fosinopril"],
+        brands: ["Apriace", "Capotril, Aceten, Angiopril", "Enatol, AB-Pril, Inopril", "Fovas"],
+        effects: ["MODERATE", "MODERATE", "MODERATE", "MODERATE"]
+      }
+    }
+  },
+  {
+    value: "insugen_n_40iu",
+    label: "Insugen-N 40IU/ml Injection",
+    category: "Human Insulin Basal",
+    saltComposition: "Insulin Isophane (40IU)",
+    price: "₹133.36",
+    manufacturer: "Biocon",
+    metadata: {
+      description: "Insugen-N 40IU/ml Injection is used to improve blood sugar control in adults and children with type 1 and type 2 diabetes mellitus. It is an intermediate-acting type of insulin that helps to lower blood sugar levels and reduce the chances of developing serious complications of diabetes.",
+      sideEffects: [
+        "Hypoglycemia (low blood glucose level)",
+        "Injection site allergic reaction",
+        "Lipodystrophy (skin thickening or pits at the injection site)",
+        "Weight gain",
+        "Edema (swelling)"
+      ],
+      drugInteractions: {
+        drugs: ["Benazepril", "Captopril", "Enalapril", "Fosinopril"],
+        brands: ["Apriace", "Capotril, Aceten, Angiopril", "Enatol, AB-Pril, Inopril", "Fovas"],
+        effects: ["MODERATE", "MODERATE", "MODERATE", "MODERATE"]
+      }
+    }
+  }
+] as const;
+
 export const account_types = [
   { value: "savings", label: "Savings Account" },
   { value: "checking", label: "Checking Account" },
@@ -1484,6 +1579,7 @@ export const MASTER_DATA_REGISTRY = {
   human_disease_master,
   livestock_disease_master,
   pet_disease_master,
+  medicine_master,
   account_types,
   patient_types,
   visit_types,
@@ -1496,6 +1592,7 @@ export const MASTER_DATA_REGISTRY = {
 export type HumanDiseaseMaster = (typeof human_disease_master)[number];
 export type LivestockDiseaseMaster = (typeof livestock_disease_master)[number];
 export type PetDiseaseMaster = (typeof pet_disease_master)[number];
+export type MedicineMaster = (typeof medicine_master)[number];
 export type AccountType = (typeof account_types)[number];
 export type PatientType = (typeof patient_types)[number];
 export type VisitType = (typeof visit_types)[number];

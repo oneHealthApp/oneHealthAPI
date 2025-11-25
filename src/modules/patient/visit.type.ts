@@ -109,12 +109,27 @@ export interface PrescriptionInput {
 }
 
 /**
- * Input type for adding visit details (diagnoses and prescriptions).
+ * Input type for adding lab order to a visit.
+ */
+export interface LabOrderInput {
+  tests: {
+    testName: string;
+    testCode?: string;
+    category?: string;
+    instructions?: string;
+  }[];
+  status?: string;
+  notes?: string;
+}
+
+/**
+ * Input type for adding visit details (diagnoses, prescriptions, and lab orders).
  */
 export interface VisitDetailsInput {
   visitId: string;
   diagnoses?: DiagnosisInput[];
   prescriptions?: PrescriptionInput[];
+  labOrders?: LabOrderInput[];
 }
 
 /**
@@ -126,5 +141,6 @@ export interface VisitDetailsResponse {
   data: {
     diagnoses: any[];
     prescriptions: any[];
+    labOrders: any[];
   };
 }

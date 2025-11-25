@@ -83,7 +83,7 @@ router.post(
   VisitController.createVisit
 );
 
-// Add details (diagnoses and prescriptions) to existing visit
+// Add details (diagnoses, prescriptions, and lab orders) to existing visit
 router.post(
   "/patients/visits/details",
   jwtMiddleware,
@@ -111,6 +111,13 @@ router.get(
   "/patients/visits",
   jwtMiddleware,
   VisitController.getVisits
+);
+
+// Get ongoing visits for a specific clinic
+router.get(
+  "/patients/visits/clinic/:clinicId/ongoing",
+  jwtMiddleware,
+  VisitController.getOngoingVisitsByClinic
 );
 
 export default router;

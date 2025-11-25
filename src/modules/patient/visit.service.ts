@@ -185,7 +185,7 @@ export const VisitService = {
   },
 
   /**
-   * Add details (diagnoses and prescriptions) to an existing visit
+   * Add details (diagnoses, prescriptions, and lab orders) to an existing visit
    */
   async addVisitDetails(input: VisitDetailsInput, requestId: string, userId: string): Promise<VisitDetailsResponse> {
     try {
@@ -197,13 +197,14 @@ export const VisitService = {
         throw new Error('Visit not found');
       }
 
-      // Validate that at least one of diagnoses or prescriptions is provided
-      if (!input.diagnoses?.length && !input.prescriptions?.length) {
-        throw new Error('At least one diagnosis or prescription must be provided');
+      // Validate that at least one of diagnoses, prescriptions, or lab orders is provided
+      if (!input.diagnoses?.length && !input.prescriptions?.length && !input.labOrders?.length) {
+        throw new Error('At least one diagnosis, prescription, or lab order must be provided');
       }
 
       let insertedDiagnoses: any[] = [];
       let insertedPrescriptions: any[] = [];
+      let insertedLabOrders: any[] = [];
 
       // Use transaction to ensure data consistency
       await prisma.$transaction(async (tx) => {
@@ -224,12 +225,22 @@ export const VisitService = {
             requestId
           );
         }
+
+        // Insert lab orders if provided
+        if (input.labOrders && input.labOrders.length > 0) {
+          insertedLabOrders = await VisitRepository.insertLabOrders(
+            input.visitId,
+            input.labOrders,
+            requestId
+          );
+        }
       });
 
       logger.info('Visit details added successfully', {
         visitId: input.visitId,
         diagnosesCount: insertedDiagnoses.length,
         prescriptionsCount: insertedPrescriptions.length,
+        labOrdersCount: insertedLabOrders.length,
         requestId,
         userId,
       });
@@ -240,12 +251,58 @@ export const VisitService = {
         data: {
           diagnoses: insertedDiagnoses,
           prescriptions: insertedPrescriptions,
+          labOrders: insertedLabOrders,
         },
       };
     } catch (error) {
       logger.error('Error adding visit details', {
         error,
         input,
+        requestId,
+        userId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Get ongoing visits for a specific clinic (where endedAt is null)
+   */
+  async getOngoingVisitsByClinic(clinicId: string, requestId: string, userId: string) {
+    try {
+      logger.debug('Fetching ongoing visits by clinic', { clinicId, requestId, userId });
+
+      // Validate clinic exists
+      const clinicValid = await VisitRepository.validateClinic(clinicId);
+      if (!clinicValid) {
+        throw new Error('Clinic not found or is inactive');
+      }
+
+      // Get ongoing visits
+      const visits = await VisitRepository.getOngoingVisitsByClinic(clinicId, requestId);
+
+      // Parse vitals JSON for each visit
+      const parsedVisits = visits.map(visit => ({
+        ...visit,
+        vitals: visit.vitals ? JSON.parse(visit.vitals) : null,
+      }));
+
+      logger.info('Ongoing visits fetched successfully', {
+        clinicId,
+        count: parsedVisits.length,
+        requestId,
+        userId,
+      });
+
+      return {
+        success: true,
+        message: 'Ongoing visits retrieved successfully',
+        data: parsedVisits,
+      };
+    } catch (error) {
+      logger.error('Error fetching ongoing visits by clinic', {
+        error,
+        clinicId,
         requestId,
         userId,
       });

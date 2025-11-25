@@ -235,6 +235,51 @@ const logger = getModuleLogger('visit-controller');
  *           description: Additional instructions
  *           example: "Take after meals"
  *     
+ *     LabOrderTest:
+ *       type: object
+ *       required:
+ *         - testName
+ *       properties:
+ *         testName:
+ *           type: string
+ *           description: Name of the lab test
+ *           example: "Complete Blood Count"
+ *         testCode:
+ *           type: string
+ *           description: Lab test code (optional)
+ *           example: "CBC"
+ *         category:
+ *           type: string
+ *           description: Test category (optional)
+ *           example: "Hematology"
+ *         instructions:
+ *           type: string
+ *           maxLength: 500
+ *           description: Special instructions for the test
+ *           example: "Fasting required"
+ *     
+ *     LabOrderInput:
+ *       type: object
+ *       required:
+ *         - tests
+ *       properties:
+ *         tests:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/LabOrderTest'
+ *           minItems: 1
+ *           description: List of lab tests to order
+ *         status:
+ *           type: string
+ *           enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+ *           description: Lab order status
+ *           example: "PENDING"
+ *         notes:
+ *           type: string
+ *           maxLength: 500
+ *           description: Additional notes for the lab order
+ *           example: "Rush order - urgent"
+ *     
  *     VisitDetailsRequest:
  *       type: object
  *       required:
@@ -254,6 +299,11 @@ const logger = getModuleLogger('visit-controller');
  *           items:
  *             $ref: '#/components/schemas/PrescriptionInput'
  *           description: List of prescriptions to add
+ *         labOrders:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/LabOrderInput'
+ *           description: List of lab orders to add
  *     
  *     VisitDetailsResponse:
  *       type: object
@@ -272,6 +322,10 @@ const logger = getModuleLogger('visit-controller');
  *               items:
  *                 type: object
  *             prescriptions:
+ *               type: array
+ *               items:
+ *                 type: object
+ *             labOrders:
  *               type: array
  *               items:
  *                 type: object
@@ -549,6 +603,293 @@ export const VisitController = {
         res,
         error instanceof Error ? error.message : 'Failed to fetch visits',
         500,
+        process.env.NODE_ENV === 'development' ? String(error) : undefined
+      );
+    }
+  },
+
+  /**
+   * @swagger
+   * /patients/visits/clinic/{clinicId}/ongoing:
+   *   get:
+   *     tags: [Visits]
+   *     summary: Get ongoing visits for a specific clinic
+   *     description: |
+   *       Retrieves all visits for a specific clinic where the visit is still ongoing (endedAt is null or empty).
+   *       This endpoint is useful for displaying active visits in the clinic dashboard.
+   *       
+   *       **Business Logic:**
+   *       - Returns only visits where endedAt is null (ongoing visits)
+   *       - Includes patient information and assigned doctor details
+   *       - Results are ordered by visit start time (most recent first)
+   *       - Includes visit vitals, symptoms, and current workflow state
+   *       
+   *       **Use Cases:**
+   *       - Clinic dashboard showing current active visits
+   *       - Queue management for ongoing patient visits
+   *       - Staff assignment and workload monitoring
+   *       - Real-time clinic capacity tracking
+   *     security:
+   *       - bearerAuth: []
+   *     parameters:
+   *       - in: path
+   *         name: clinicId
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: The clinic ID to get ongoing visits for
+   *         example: "clinic-456"
+   *     responses:
+   *       200:
+   *         description: Ongoing visits retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: "Ongoing visits retrieved successfully"
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       id:
+   *                         type: string
+   *                         description: Visit ID
+   *                         example: "visit-abc123"
+   *                       tenantId:
+   *                         type: string
+   *                         description: Tenant ID
+   *                         example: "tenant-123"
+   *                       clinicId:
+   *                         type: string
+   *                         description: Clinic ID
+   *                         example: "clinic-456"
+   *                       patientId:
+   *                         type: string
+   *                         description: Patient ID
+   *                         example: "patient-789"
+   *                       visitType:
+   *                         type: string
+   *                         enum: [CLINIC, HOME, ON_CALL, FARM]
+   *                         example: "CLINIC"
+   *                       startedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         description: Visit start time
+   *                         example: "2025-11-22T10:30:00.000Z"
+   *                       endedAt:
+   *                         type: null
+   *                         description: Visit end time (null for ongoing visits)
+   *                         example: null
+   *                       symptoms:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Patient symptoms
+   *                         example: "Fever, headache"
+   *                       vitals:
+   *                         type: object
+   *                         nullable: true
+   *                         description: Patient vital signs
+   *                         example:
+   *                           temperature: 98.6
+   *                           pulse: 72
+   *                           bp: "120/80"
+   *                           spo2: 98
+   *                       notes:
+   *                         type: string
+   *                         nullable: true
+   *                         description: Visit notes
+   *                         example: "Patient appears alert"
+   *                       workflowState:
+   *                         type: string
+   *                         description: Current workflow state
+   *                         example: "OPEN"
+   *                       patient:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             example: "patient-789"
+   *                           pseudonymId:
+   *                             type: string
+   *                             example: "P-12345"
+   *                           type:
+   *                             type: string
+   *                             enum: [HUMAN, PET, LIVESTOCK]
+   *                             example: "HUMAN"
+   *                           age:
+   *                             type: number
+   *                             nullable: true
+   *                             example: 35
+   *                           sex:
+   *                             type: string
+   *                             nullable: true
+   *                             example: "Male"
+   *                           species:
+   *                             type: string
+   *                             nullable: true
+   *                             example: null
+   *                       doctor:
+   *                         type: object
+   *                         nullable: true
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             example: "doctor-101"
+   *                           username:
+   *                             type: string
+   *                             example: "dr.smith"
+   *                           emailId:
+   *                             type: string
+   *                             example: "dr.smith@clinic.com"
+   *                           person:
+   *                             type: object
+   *                             nullable: true
+   *                             properties:
+   *                               fullName:
+   *                                 type: string
+   *                                 example: "Dr. John Smith"
+   *                       clinic:
+   *                         type: object
+   *                         properties:
+   *                           id:
+   *                             type: string
+   *                             example: "clinic-456"
+   *                           name:
+   *                             type: string
+   *                             example: "City General Clinic"
+   *                           clinicType:
+   *                             type: string
+   *                             enum: [HUMAN, PET, LIVESTOCK]
+   *                             example: "HUMAN"
+   *                       createdAt:
+   *                         type: string
+   *                         format: date-time
+   *                         example: "2025-11-22T10:30:00.000Z"
+   *                       updatedAt:
+   *                         type: string
+   *                         format: date-time
+   *                         example: "2025-11-22T10:30:00.000Z"
+   *             examples:
+   *               withOngoingVisits:
+   *                 summary: Clinic with ongoing visits
+   *                 value:
+   *                   success: true
+   *                   message: "Ongoing visits retrieved successfully"
+   *                   data:
+   *                     - id: "visit-abc123"
+   *                       tenantId: "tenant-123"
+   *                       clinicId: "clinic-456"
+   *                       patientId: "patient-789"
+   *                       visitType: "CLINIC"
+   *                       startedAt: "2025-11-22T10:30:00.000Z"
+   *                       endedAt: null
+   *                       symptoms: "Fever, headache"
+   *                       vitals:
+   *                         temperature: 98.6
+   *                         pulse: 72
+   *                         bp: "120/80"
+   *                         spo2: 98
+   *                       notes: "Patient appears alert"
+   *                       workflowState: "OPEN"
+   *                       patient:
+   *                         id: "patient-789"
+   *                         pseudonymId: "P-12345"
+   *                         type: "HUMAN"
+   *                         age: 35
+   *                         sex: "Male"
+   *                         species: null
+   *                       doctor:
+   *                         id: "doctor-101"
+   *                         username: "dr.smith"
+   *                         emailId: "dr.smith@clinic.com"
+   *                         person:
+   *                           fullName: "Dr. John Smith"
+   *                       clinic:
+   *                         id: "clinic-456"
+   *                         name: "City General Clinic"
+   *                         clinicType: "HUMAN"
+   *                       createdAt: "2025-11-22T10:30:00.000Z"
+   *                       updatedAt: "2025-11-22T10:30:00.000Z"
+   *               emptyResult:
+   *                 summary: No ongoing visits
+   *                 value:
+   *                   success: true
+   *                   message: "Ongoing visits retrieved successfully"
+   *                   data: []
+   *       400:
+   *         description: Bad Request - Invalid clinic ID
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: "Invalid clinic ID"
+   *                 error:
+   *                   type: string
+   *                   example: "Clinic with provided ID does not exist or is inactive"
+   *       401:
+   *         description: Unauthorized - Missing or invalid JWT token
+   *       404:
+   *         description: Clinic not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: false
+   *                 message:
+   *                   type: string
+   *                   example: "Clinic not found"
+   *       500:
+   *         description: Internal Server Error
+   */
+  async getOngoingVisitsByClinic(req: Request, res: Response) {
+    try {
+      const clinicId = String(req.params.clinicId);
+      
+      const result = await VisitService.getOngoingVisitsByClinic(
+        clinicId,
+        (req as any).requestId,
+        (req as any).user?.id
+      );
+
+      logger.debug('✅ Ongoing visits retrieved successfully', {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        clinicId,
+        count: result.data.length,
+      });
+
+      successResponse(res, result);
+    } catch (error) {
+      logger.error('❌ Get ongoing visits error', {
+        requestId: (req as any).requestId,
+        userId: (req as any).user?.id,
+        clinicId: req.params.clinicId,
+        error,
+      });
+
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch ongoing visits';
+      const statusCode = errorMessage.includes('not found') || errorMessage.includes('Invalid') ? 404 : 500;
+
+      errorResponse(
+        res,
+        errorMessage,
+        statusCode,
         process.env.NODE_ENV === 'development' ? String(error) : undefined
       );
     }

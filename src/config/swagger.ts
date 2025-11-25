@@ -124,6 +124,10 @@ const swaggerDefinition = {
       description: 'Patient management endpoints for humans, pets, and livestock',
     },
     {
+      name: 'Visits',
+      description: 'Patient visit management endpoints including diagnoses, prescriptions, and lab orders',
+    },
+    {
       name: 'Clinics',
       description: 'Clinic management endpoints for healthcare facilities',
     },

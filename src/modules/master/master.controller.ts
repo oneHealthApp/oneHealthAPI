@@ -49,6 +49,108 @@ const logger = getModuleLogger("master-controller");
  *                 type: string
  *               example: ["Increased thirst", "Frequent urination"]
  *
+ *     MedicineItem:
+ *       type: object
+ *       properties:
+ *         value:
+ *           type: string
+ *           example: "human_insulatard_40iu"
+ *         label:
+ *           type: string
+ *           example: "Human Insulatard 40IU/ml Suspension for Injection"
+ *         category:
+ *           type: string
+ *           example: "Human Insulin Basal"
+ *         saltComposition:
+ *           type: string
+ *           example: "Insulin Isophane (40IU)"
+ *         price:
+ *           type: string
+ *           example: "₹133.93"
+ *         manufacturer:
+ *           type: string
+ *           example: "Novo Nordisk India Pvt Ltd"
+ *         metadata:
+ *           type: object
+ *           properties:
+ *             description:
+ *               type: string
+ *               example: "Human Insulatard 40IU/ml Suspension for Injection is used to improve blood sugar control..."
+ *             sideEffects:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               example: ["Hypoglycemia", "Injection site allergic reaction"]
+ *             drugInteractions:
+ *               type: object
+ *               properties:
+ *                 drugs:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Benazepril", "Captopril"]
+ *                 brands:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Apriace", "Capotril"]
+ *                 effects:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["MODERATE", "MODERATE"]
+ *
+ *     MedicineItem:
+ *       type: object
+ *       properties:
+ *         value:
+ *           type: string
+ *           example: "human_insulatard_40iu"
+ *         label:
+ *           type: string
+ *           example: "Human Insulatard 40IU/ml Suspension for Injection"
+ *         category:
+ *           type: string
+ *           example: "Human Insulin Basal"
+ *         saltComposition:
+ *           type: string
+ *           example: "Insulin Isophane (40IU)"
+ *         price:
+ *           type: string
+ *           example: "₹133.93"
+ *         manufacturer:
+ *           type: string
+ *           example: "Novo Nordisk India Pvt Ltd"
+ *         metadata:
+ *           type: object
+ *           properties:
+ *             description:
+ *               type: string
+ *               example: "Human Insulatard 40IU/ml Suspension for Injection is used to improve blood sugar control..."
+ *             sideEffects:
+ *               type: array
+ *               items:
+ *                 type: string
+ *               example: ["Hypoglycemia", "Injection site allergic reaction"]
+ *             drugInteractions:
+ *               type: object
+ *               properties:
+ *                 drugs:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Benazepril", "Captopril"]
+ *                 brands:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["Apriace", "Capotril"]
+ *                 effects:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                   example: ["MODERATE", "MODERATE"]
+ *
  *     MasterDataResponse:
  *       type: object
  *       properties:
@@ -70,6 +172,8 @@ const logger = getModuleLogger("master-controller");
  *                 oneOf:
  *                   - $ref: '#/components/schemas/MasterDataItem'
  *                   - $ref: '#/components/schemas/DiseaseItem'
+ *                   - $ref: '#/components/schemas/MedicineItem'
+ *                   - $ref: '#/components/schemas/MedicineItem'
  *             count:
  *               type: integer
  *               example: 2
@@ -112,7 +216,7 @@ export class MasterController {
    *         required: true
    *         schema:
    *           type: string
-   *           enum: [human_disease_master, livestock_disease_master, pet_disease_master, account_types, patient_types, visit_types, gender_options, blood_groups, marital_status]
+   *           enum: [human_disease_master, livestock_disease_master, pet_disease_master, medicine_master, account_types, patient_types, visit_types, gender_options, blood_groups, marital_status]
    *         description: Name of the master data collection
    *         example: human_disease_master
    *     responses:
@@ -228,7 +332,7 @@ export class MasterController {
    *         required: true
    *         schema:
    *           type: string
-   *           enum: [human_disease_master, livestock_disease_master, pet_disease_master, account_types, patient_types, visit_types, gender_options, blood_groups, marital_status]
+   *           enum: [human_disease_master, livestock_disease_master, pet_disease_master, medicine_master, account_types, patient_types, visit_types, gender_options, blood_groups, marital_status]
    *         description: Name of the master data collection to search
    *         example: human_disease_master
    *       - in: query
@@ -238,7 +342,7 @@ export class MasterController {
    *           type: string
    *           minLength: 1
    *           maxLength: 100
-   *         description: Search term (searches in label, value, disease type, ICD code, and symptoms)
+   *         description: Search term (searches in label, value, disease type, ICD code, symptoms, medicine name, manufacturer, salt composition)
    *         example: diabetes
    *     responses:
    *       200:

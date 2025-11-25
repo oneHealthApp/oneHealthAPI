@@ -117,7 +117,27 @@ export const VisitValidator = {
         instructions: Joi.string().max(1000).optional().allow(''),
       })
     ).optional().min(0),
-  }).or('diagnoses', 'prescriptions').messages({
-    'object.missing': 'At least one of diagnoses or prescriptions must be provided',
+    labOrders: Joi.array().items(
+      Joi.object({
+        tests: Joi.array().items(
+          Joi.object({
+            testName: Joi.string().required().messages({
+              'string.empty': 'Test name is required',
+              'any.required': 'Test name is required',
+            }),
+            testCode: Joi.string().optional(),
+            category: Joi.string().optional(),
+            instructions: Joi.string().max(500).optional().allow(''),
+          })
+        ).required().min(1).messages({
+          'array.min': 'At least one test is required',
+          'any.required': 'Tests are required',
+        }),
+        status: Joi.string().valid('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED').optional(),
+        notes: Joi.string().max(500).optional().allow(''),
+      })
+    ).optional().min(0),
+  }).or('diagnoses', 'prescriptions', 'labOrders').messages({
+    'object.missing': 'At least one of diagnoses, prescriptions, or lab orders must be provided',
   }),
 };

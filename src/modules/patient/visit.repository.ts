@@ -27,7 +27,7 @@ export const VisitRepository = {
         doctor: data.doctorId ? { connect: { id: data.doctorId } } : undefined,
         visitType: data.visitType || VisitType.CLINIC,
         vitals: data.vitals ? JSON.stringify(data.vitals) : undefined,
-        symptoms: data.symptoms ? JSON.parse(data.symptoms) : Prisma.JsonNull,
+        symptoms: data.symptoms ?? undefined,
         notes: data.notes || null,
         workflowState: 'OPEN',
         startedAt: new Date(),
@@ -138,9 +138,7 @@ export const VisitRepository = {
         ...data,
 
         vitals: data.vitals ?? Prisma.JsonNull,
-        symptoms: {
-          set: data.symptoms ?? null,
-        },
+        symptoms: data.symptoms ?? null,
 
         updatedAt: new Date(),
       };
@@ -486,6 +484,139 @@ export const VisitRepository = {
         error,
         visitId,
         prescriptions,
+        requestId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Insert multiple lab orders for a visit
+   */
+  async insertLabOrders(
+    visitId: string,
+    labOrders: any[],
+    requestId: string,
+  ): Promise<any[]> {
+    try {
+      logger.debug('Inserting lab orders', {
+        visitId,
+        count: labOrders.length,
+        requestId,
+      });
+
+      const labOrderData = labOrders.map((labOrder) => ({
+        visitId,
+        tests: JSON.stringify(labOrder.tests),
+        status: labOrder.status || 'PENDING',
+        results: labOrder.results ? JSON.stringify(labOrder.results) : Prisma.JsonNull,
+      }));
+
+      const result = await prisma.labOrder.createMany({
+        data: labOrderData,
+      });
+
+      // Get the created lab orders
+      const createdLabOrders = await prisma.labOrder.findMany({
+        where: {
+          visitId,
+          createdAt: {
+            gte: new Date(Date.now() - 1000), // Get lab orders created in the last second
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: labOrders.length,
+      });
+
+      // Parse tests JSON back to objects
+      const parsedLabOrders = createdLabOrders.map((labOrder) => ({
+        ...labOrder,
+        tests: JSON.parse(labOrder.tests as string),
+        results: labOrder.results ? JSON.parse(labOrder.results as string) : null,
+      }));
+
+      logger.info('Lab orders inserted successfully', {
+        visitId,
+        count: result.count,
+        requestId,
+      });
+
+      return parsedLabOrders;
+    } catch (error) {
+      logger.error('Error inserting lab orders', {
+        error,
+        visitId,
+        labOrders,
+        requestId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Get ongoing visits for a specific clinic (where endedAt is null)
+   */
+  async getOngoingVisitsByClinic(
+    clinicId: string,
+    requestId: string,
+  ): Promise<any[]> {
+    try {
+      logger.debug('Fetching ongoing visits by clinic ID', { clinicId, requestId });
+
+      const visits = await prisma.visit.findMany({
+        where: {
+          clinicId,
+          endedAt: null, // Only ongoing visits
+        },
+        include: {
+          patient: {
+            select: {
+              id: true,
+              pseudonymId: true,
+              type: true,
+              age: true,
+              sex: true,
+              species: true,
+            },
+          },
+          doctor: {
+            select: {
+              id: true,
+              username: true,
+              emailId: true,
+              person: {
+                select: {
+                  fullName: true,
+                },
+              },
+            },
+          },
+          clinic: {
+            select: {
+              id: true,
+              name: true,
+              clinicType: true,
+            },
+          },
+        },
+        orderBy: {
+          startedAt: 'desc', // Most recent visits first
+        },
+      });
+
+      logger.info('Ongoing visits fetched successfully', {
+        clinicId,
+        count: visits.length,
+        requestId,
+      });
+
+      return visits;
+    } catch (error) {
+      logger.error('Error fetching ongoing visits by clinic', {
+        error,
+        clinicId,
         requestId,
       });
       throw error;

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { MasterController } from './master.controller';
 import { MasterValidator } from './master.validator';
-import { jwtMiddleware, validateRequest } from '../../middlewares';
+import { jwtMiddleware, validateRequest, validateParamsAndQuery } from '../../middlewares';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ router.get(
 router.get(
   '/master/:collection/search',
   jwtMiddleware,
-
+  validateParamsAndQuery(MasterValidator.searchMasterData),
   MasterController.searchMasterData
 );
 
@@ -29,7 +29,7 @@ router.get(
 router.get(
   '/master/:collection',
   jwtMiddleware,
-  
+  validateParamsAndQuery(MasterValidator.getMasterData),
   MasterController.getMasterData
 );
 

@@ -114,7 +114,19 @@ export const PatientRepository = {
             select: { id: true, address: true, town: true, state: true, countryName: true }
           },
           identities: {
-            select: { id: true, nameCipher: true, phoneCipher: true, emailCipher: true }
+            include: {
+              person: {
+                select: { 
+                  id: true, 
+                  fullName: true, 
+                  phone: true, 
+                  email: true, 
+                  dateOfBirth: true, 
+                  sex: true,
+                  type: true
+                }
+              }
+            }
           }
         }
       });
@@ -194,7 +206,19 @@ export const PatientRepository = {
             select: { id: true, address: true, town: true, state: true, countryName: true }
           },
           identities: {
-            select: { id: true, nameCipher: true, phoneCipher: true, emailCipher: true }
+            include: {
+              person: {
+                select: { 
+                  id: true, 
+                  fullName: true, 
+                  phone: true, 
+                  email: true, 
+                  dateOfBirth: true, 
+                  sex: true,
+                  type: true
+                }
+              }
+            }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -253,7 +277,19 @@ export const PatientRepository = {
               select: { id: true, address: true, town: true, state: true, countryName: true }
             },
             identities: {
-              select: { id: true, nameCipher: true, phoneCipher: true, emailCipher: true }
+              include: {
+                person: {
+                  select: { 
+                    id: true, 
+                    fullName: true, 
+                    phone: true, 
+                    email: true, 
+                    dateOfBirth: true, 
+                    sex: true,
+                    type: true
+                  }
+                }
+              }
             }
           },
           orderBy: { createdAt: 'desc' }
@@ -300,7 +336,19 @@ export const PatientRepository = {
             select: { id: true, address: true, town: true, state: true, countryName: true }
           },
           identities: {
-            select: { id: true, nameCipher: true, phoneCipher: true, emailCipher: true }
+            include: {
+              person: {
+                select: { 
+                  id: true, 
+                  fullName: true, 
+                  phone: true, 
+                  email: true, 
+                  dateOfBirth: true, 
+                  sex: true,
+                  type: true
+                }
+              }
+            }
           },
           visits: {
             select: { id: true, startedAt: true, endedAt: true, visitType: true }
@@ -337,8 +385,26 @@ export const PatientRepository = {
             select: { id: true, address: true, town: true, state: true, countryName: true }
           },
           identities: {
-            select: { id: true, nameCipher: true, phoneCipher: true, emailCipher: true }
+            include: {
+              person: {
+                select: { 
+                  id: true, 
+                  fullName: true, 
+                  phone: true, 
+                  email: true, 
+                  dateOfBirth: true, 
+                  sex: true,
+                  type: true
+                }
+              }
             }
+          },
+          visits: {
+            select: { id: true, startedAt: true, endedAt: true, visitType: true }
+          },
+          vaccinations: {
+            select: { id: true, vaccineName: true, givenAt: true, nextDueAt: true }
+          }
         }
       });
       logger.debug("Fetched Patient by pseudonym ID successfully", { pseudonymId, result, requestId, userId });
