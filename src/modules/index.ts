@@ -23,3 +23,5 @@ export { default as patientRoutes } from "./patient/patient.routes";
 
 // clinic routes
 export { default as clinicRoutes } from "./clinic/clinic.routes";
+
+export { default as dashboardRoutes } from "./dashboard/dashboard.routes";
