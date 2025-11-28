@@ -17,6 +17,8 @@ import {
   authRouter,
   patientRoutes,
   clinicRoutes,
+  doctorRoutes,
+  masterRoutes,
   dashboardRoutes,
 } from './modules';
 import setupRoutes from './routes/setup.routes';
@@ -98,6 +100,8 @@ app.use(
   UserRoleRoutes,
   patientRoutes,
   clinicRoutes,
+  doctorRoutes,
+  masterRoutes,
   dashboardRoutes,
 );
 

@@ -1,5 +1,5 @@
-import { Prisma, User } from '@prisma/client';
-import { UserCreateInput } from './user.type';
+import { Prisma, User, PersonType } from '@prisma/client';
+import { UserCreateInput, StaffCreateInput, StaffCreateResponse } from './user.type';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { UserRepository } from './user.repository';
@@ -15,9 +15,7 @@ const JWT_REFRESH_SECRET = env.JWT_REFRESH_SECRET;
 const JWT_REFRESH_EXPIRY = env.JWT_REFRESH_EXPIRY || '7d';
 const PASSWORD_EXPIRY_DAYS = parseInt(process.env.PASSWORD_EXPIRY_DAYS || '90');
 
-type SafeUser = Omit<User, 'passwordHash'> & {
-  roles: string[];
-};
+type SafeUser = any;
 
 export const UserService = {
   async register(input: UserCreateInput, requestId: string, userId: string): Promise<{
@@ -103,6 +101,110 @@ export const UserService = {
     }
   },
 
+  async createStaff(input: StaffCreateInput, requestId: string, createdBy: string): Promise<StaffCreateResponse> {
+    try {
+      logger.debug('Creating staff user', { 
+        input: { ...input, password: '**REDACTED**' }, 
+        requestId, 
+        createdBy 
+      });
+
+      // First, check if the roleId exists and get the role name to verify if it's STAFF
+      const role = await UserRepository.findRoleById(input.roleId);
+      if (!role) {
+        throw new Error('Invalid role ID');
+      }
+
+      const isStaffRole = role.roleName === 'STAFF';
+      logger.debug('Role validation', { roleId: input.roleId, roleName: role.roleName, isStaffRole });
+
+      // Validate unique fields
+      const existingUser = await UserRepository.findUserByIdentifier(input.username);
+      if (existingUser) {
+        throw new Error('Username already exists');
+      }
+
+      const emailExists = await UserRepository.findUserByIdentifier(input.email);
+      if (emailExists) {
+        throw new Error('Email already registered');
+      }
+
+      const phoneExists = await UserRepository.findUserByIdentifier(input.phoneNumber);
+      if (phoneExists) {
+        throw new Error('Phone number already registered');
+      }
+
+      // Validate tenant and clinic existence
+      const tenant = await UserRepository.findTenantById(input.tenantId);
+      if (!tenant) {
+        throw new Error('Invalid tenant ID');
+      }
+
+      const clinic = await UserRepository.findClinicById(input.clinicId);
+      if (!clinic) {
+        throw new Error('Invalid clinic ID');
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(input.password, 10);
+
+      // Use Prisma transaction to create User, Person (if STAFF), UserRole, and UserClinic
+      const result = await UserRepository.createStaffWithTransaction({
+        userData: {
+          username: input.username,
+          passwordHash: hashedPassword,
+          emailId: input.email,
+          mobileNumber: input.phoneNumber,
+          tenantId: input.tenantId,
+          emailValidationStatus: false,
+          mobileValidationStatus: false,
+          isLocked: false,
+          multiSessionCount: 1,
+          createdBy,
+          updatedBy: createdBy,
+        },
+        personData: isStaffRole ? {
+          tenantId: input.tenantId,
+          type: PersonType.USER,
+          fullName: input.name,
+          phone: input.phoneNumber,
+          email: input.email,
+          sex: input.sex || null,
+        } : null,
+        roleData: {
+          roleId: input.roleId,
+          priority: role.priority,
+          createdBy,
+          updatedBy: createdBy,
+        },
+        clinicData: {
+          clinicId: input.clinicId,
+          roleInClinic: 'STAFF',
+        },
+      }, requestId);
+
+      logger.info('Staff user created successfully', {
+        username: result.user.username,
+        personCreated: isStaffRole,
+        requestId
+      });
+
+      return {
+        success: true,
+        message: 'User created successfully',
+        data: result,
+      };
+    } catch (error) {
+      logger.error('Staff creation failed', {
+        error,
+        input: { ...input, password: '**REDACTED**' },
+        requestId,
+        createdBy
+      });
+      throw error;
+    }
+  },
+
   async login(input: { identifier: string; password: string }, requestId: string): Promise<{
     user: SafeUser;
     accessToken: string;
@@ -125,7 +227,13 @@ export const UserService = {
         throw new Error('Password expired. Please reset your password.');
       }
 
-      const roles = user.userRoles?.map((ur: { roleId: string }) => ur.roleId) || [];
+      // Map roles with full information
+            const roles = user.userRoles?.map((ur: { role: { id: string; roleName: string; roleCategory?: string | null }; priority?: number }) => ({
+              roleId: ur.role.id,
+              roleName: ur.role.roleName,
+              roleCategory: ur.role.roleCategory,
+              priority: ur.priority ?? null,
+            })) || [];
       
 
       const accessToken = jwt.sign(
@@ -150,12 +258,36 @@ export const UserService = {
         7 * 24 * 60 * 60,
       );
 
-      const { passwordHash, ...rest } = user;
+      const { passwordHash, userRoles, tenant, clinics, ...rest } = user;
+
+      // Construct enhanced user response with tenant and clinic information
+      const userResponse = {
+        ...rest,
+        roles,
+        tenantId: user.tenantId || user.tenant?.id || null,
+        clinicId: user.clinics?.[0]?.clinic?.id || null,
+        // Include tenant information when available
+        ...(user.tenant && {
+          tenant: {
+            id: user.tenant.id,
+            name: user.tenant.name,
+            slug: user.tenant.slug,
+          },
+        }),
+        // Include clinic information when available
+        ...(user.clinics && user.clinics.length > 0 && {
+          clinics: user.clinics.map((userClinic) => ({
+            id: userClinic.clinic.id,
+            name: userClinic.clinic.name,
+            clinicType: userClinic.clinic.clinicType,
+          })),
+        }),
+      };
 
       logger.info('Login successful', { username: user.username, requestId });
 
       return {
-        user: { ...rest, roles },
+        user: userResponse,
         accessToken,
         refreshToken,
       };
@@ -539,5 +671,5 @@ async verifyEmailById(
       logger.error('Failed to resend verification', { identifier, error, requestId });
       throw error;
     }
-  }
+  },
 };

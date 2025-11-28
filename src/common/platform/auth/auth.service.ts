@@ -307,12 +307,26 @@ export const AuthService = {
       id: string;
       userId: string;
       profilePictureUrl?: string | null;
+      tenantId?: string | null;
       person?: {
         id: string;
         nameInEnglish?: string | null;
         photoURL?: string | null;
         email?: string | null;
       } | null;
+      tenant?: {
+        id: string;
+        name: string;
+        slug: string;
+      } | null;
+      clinics?: Array<{
+        clinic: {
+          id: string;
+          name: string;
+          clinicType: string;
+          tenantId: string;
+        };
+      }>;
       UserRole: Array<{
         role: {
           id: string;
@@ -469,11 +483,28 @@ export const AuthService = {
       userName: user.person?.nameInEnglish || '',
       email: user.person?.email || '',
       authority: user.UserRole[0]?.role.roleCategory || '',
+      tenantId: user.tenantId || user.tenant?.id || '',
+      clinicId: user.clinics?.[0]?.clinic?.id || '',
       roles: user.UserRole.map((userRole) => ({
         roleId: userRole.role.id,
         roleName: userRole.role.roleName,
         roleCategory: userRole.role.roleCategory,
       })),
+      // Include tenant and clinic information when available
+      ...(user.tenant && {
+        tenant: {
+          id: user.tenant.id,
+          name: user.tenant.name,
+          slug: user.tenant.slug,
+        },
+      }),
+      ...(user.clinics && user.clinics.length > 0 && {
+        clinics: user.clinics.map((userClinic) => ({
+          id: userClinic.clinic.id,
+          name: userClinic.clinic.name,
+          clinicType: userClinic.clinic.clinicType,
+        })),
+      }),
       // Only include shgMemberships for non-Admin/Co-ordinator users
       ...(!hasAdminOrCoordinatorRole && {
         shgMemberships: formattedMemberships,

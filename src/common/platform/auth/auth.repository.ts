@@ -59,7 +59,26 @@ export const AuthRepository = {
             nameInEnglish: true,
             photoURL: true,
             email: true,
-            aadhaarMasked: true, // Add this line
+            aadhaarMasked: true,
+          },
+        },
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        clinics: {
+          include: {
+            clinic: {
+              select: {
+                id: true,
+                name: true,
+                clinicType: true,
+                tenantId: true,
+              },
+            },
           },
         },
         UserRole: {

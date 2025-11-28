@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { PatientController } from "./patient.controller";
 import { PatientValidator } from "./patient.validator";
+import { VisitController } from "./visit.controller";
+import { VisitValidator } from "./visit.validator";
 import { validateRequest, jwtMiddleware } from "../../middlewares";
 
 const router = Router();
@@ -67,6 +69,55 @@ router.delete(
   "/patients/:id", 
   jwtMiddleware,
   PatientController.delete
+);
+
+// ========================================
+// VISIT ROUTES
+// ========================================
+
+// Create a new visit
+router.post(
+  "/patients/visits",
+  jwtMiddleware,
+  validateRequest(VisitValidator.create),
+  VisitController.createVisit
+);
+
+// Add details (diagnoses, prescriptions, and lab orders) to existing visit
+router.post(
+  "/patients/visits/details",
+  jwtMiddleware,
+  validateRequest(VisitValidator.addDetails),
+  VisitController.addVisitDetails
+);
+
+// Get visit by ID
+router.get(
+  "/patients/visits/:id",
+  jwtMiddleware,
+  VisitController.getVisitById
+);
+
+// Update visit
+router.put(
+  "/patients/visits/:id",
+  jwtMiddleware,
+  validateRequest(VisitValidator.update),
+  VisitController.updateVisit
+);
+
+// Get visits with filtering
+router.get(
+  "/patients/visits",
+  jwtMiddleware,
+  VisitController.getVisits
+);
+
+// Get ongoing visits for a specific clinic
+router.get(
+  "/patients/visits/clinic/:clinicId/ongoing",
+  jwtMiddleware,
+  VisitController.getOngoingVisitsByClinic
 );
 
 export default router;
