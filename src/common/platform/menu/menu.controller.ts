@@ -486,34 +486,34 @@ export const MenuController = {
    *       500:
    *         description: Failed to get user menus
    */
-  async getUserMenus(req: Request, res: Response) {
-    try {
-      const { userId } = req.params;
-      const result = await service.getUserMenus(
-        userId,
-        (req as any).requestId,
-        (req as any).user?.id,
-      );
+  // async getUserMenus(req: Request, res: Response) {
+  //   try {
+  //     const { userId } = req.params;
+  //     const result = await service.getUserMenus(
+  //       userId,
+  //       (req as any).requestId,
+  //       (req as any).user?.id,
+  //     );
 
-      logger.debug('✅ User menus retrieved successfully', {
-        requestId: (req as any).requestId,
-        userId,
-      });
-      successResponse(res, result);
-    } catch (error) {
-      logger.error('❌ Failed to get user menus', {
-        requestId: (req as any).requestId,
-        userId: req.params.userId,
-        error,
-      });
-      errorResponse(
-        res,
-        'Failed to get user menus',
-        500,
-        process.env.NODE_ENV === 'development' ? String(error) : undefined,
-      );
-    }
-  },
+  //     logger.debug('✅ User menus retrieved successfully', {
+  //       requestId: (req as any).requestId,
+  //       userId,
+  //     });
+  //     successResponse(res, result);
+  //   } catch (error) {
+  //     logger.error('❌ Failed to get user menus', {
+  //       requestId: (req as any).requestId,
+  //       userId: req.params.userId,
+  //       error,
+  //     });
+  //     errorResponse(
+  //       res,
+  //       'Failed to get user menus',
+  //       500,
+  //       process.env.NODE_ENV === 'development' ? String(error) : undefined,
+  //     );
+  //   }
+  // },
 };
 
 /**
