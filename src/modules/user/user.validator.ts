@@ -94,5 +94,50 @@ export const UserValidator = {
     resendVerificationSchema: Joi.object({
     identifier: Joi.string().required(),
   }),
+
+  createStaff: Joi.object({
+    tenantId: Joi.string().required().messages({
+      'string.empty': 'Tenant ID is required',
+      'any.required': 'Tenant ID is required',
+    }),
+    clinicId: Joi.string().required().messages({
+      'string.empty': 'Clinic ID is required', 
+      'any.required': 'Clinic ID is required',
+    }),
+    name: Joi.string().min(2).max(100).required().messages({
+      'string.empty': 'Name is required',
+      'string.min': 'Name must be at least 2 characters long',
+      'string.max': 'Name cannot exceed 100 characters',
+      'any.required': 'Name is required',
+    }),
+    phoneNumber: Joi.string().pattern(/^[0-9]{10,15}$/).required().messages({
+      'string.empty': 'Phone number is required',
+      'string.pattern.base': 'Phone number must be 10-15 digits',
+      'any.required': 'Phone number is required',
+    }),
+    email: Joi.string().email().required().messages({
+      'string.empty': 'Email is required',
+      'string.email': 'Email must be valid',
+      'any.required': 'Email is required',
+    }),
+    username: Joi.string().min(3).max(50).pattern(/^[a-zA-Z0-9_]+$/).required().messages({
+      'string.empty': 'Username is required',
+      'string.min': 'Username must be at least 3 characters long',
+      'string.max': 'Username cannot exceed 50 characters',
+      'string.pattern.base': 'Username can only contain letters, numbers and underscores',
+      'any.required': 'Username is required',
+    }),
+    password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/).required().messages({
+      'string.empty': 'Password is required',
+      'string.min': 'Password must be at least 8 characters long',
+      'string.pattern.base': 'Password must contain uppercase, lowercase, number and special character',
+      'any.required': 'Password is required',
+    }),
+    sex: Joi.string().valid('MALE', 'FEMALE', 'OTHER').optional(),
+    roleId: Joi.string().required().messages({
+      'string.empty': 'Role ID is required',
+      'any.required': 'Role ID is required',
+    }),
+  }),
   
 };

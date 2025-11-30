@@ -17,10 +17,18 @@ import {
   authRouter,
   patientRoutes,
   clinicRoutes,
+  doctorRoutes,
+  masterRoutes,
+  dashboardRoutes,
 } from './modules';
 import setupRoutes from './routes/setup.routes';
 
 const app = express();
+
+// Add a JSON replacer to handle BigInt serialization
+app.set('json replacer', (key: string, value: any) =>
+  typeof value === 'bigint' ? value.toString() : value,
+);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -102,6 +110,9 @@ app.use(
   UserRoleRoutes,
   patientRoutes,
   clinicRoutes,
+  doctorRoutes,
+  masterRoutes,
+  dashboardRoutes,
 );
 
 // Setup routes (for development/testing only)

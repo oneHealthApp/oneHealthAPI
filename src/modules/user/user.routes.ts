@@ -92,4 +92,12 @@ router.post(
   UserController.resendVerification
 );
 
+// Staff creation endpoint
+router.post(
+  '/users/staff',
+  jwtMiddleware,
+  validateRequest(UserValidator.createStaff),
+  UserController.createStaff,
+);
+
 export default router;

@@ -9,24 +9,53 @@ const router = Router();
  * Routes for Role module.
  */
 
+// Create or Update Role
 router.post(
-  '/roles',
+  '/o/role',
   validateRequest(RoleValidator.create),
   RoleController.create,
 );
 
-router.get('/roles', RoleController.getAll);
+// Get All Roles
+router.get('/o/role', RoleController.getAll);
 
-router.get('/roles/page', RoleController.getAllPaginated);
+// Get All Roles (Paginated)
+router.get('/o/role/page', RoleController.getAllPaginated);
 
-router.get('/roles/:id', RoleController.getById);
+// Get Role by ID
+router.get('/o/role/:id', RoleController.getById);
 
+// Update Role
 router.put(
-  '/roles/:id',
+  '/o/role/:id',
   validateRequest(RoleValidator.update),
   RoleController.update,
 );
 
-router.delete('/roles/:id', RoleController.delete);
+// Delete Role
+router.delete('/o/role/:id', RoleController.delete);
+
+// GET /api/v1/role?active=true|false — filtered list by active flag
+router.get('/role/filtered', RoleController.listFiltered);
+
+// POST /api/v1/role/menu/attach — Attach menus to a role with permissions
+router.post(
+  '/o/role/menu/attach',
+  validateRequest(RoleValidator.attachMenus),
+  RoleController.attachMenus,
+);
+
+// POST /api/v1/role/menu/detach — Detach menus from a role
+router.post(
+  '/o/role/menu/detach',
+  validateRequest(RoleValidator.detachMenus),
+  RoleController.detachMenus,
+);
+
+// GET /api/v1/role/:id/menus — Get menus with permissions for a role
+router.get('/o/role/:id/menus', RoleController.getRoleMenus);
+
+// POST /api/v1/role/cache/clear/:id — Clear role-menu cache
+router.post('/o/role/cache/clear/:id', RoleController.clearRoleMenuCache);
 
 export default router;
