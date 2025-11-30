@@ -2,7 +2,7 @@ import { redisCacheHelper } from '../../../utils/redisCacheHelper';
 import { getModuleLogger } from '../../../utils/logger';
 import { MenuCreateInput, MenuUpdateInput } from './menu.type';
 import { MenuRepository } from './menu.repository';
-import { UserService } from '../user/user.service';
+
 const logger = getModuleLogger('menu-service');
 
 /**
@@ -70,10 +70,10 @@ export class MenuService {
         CacheKeys.filteredMenus(false),
       ];
 
-      await Promise.all([
-        ...keysToDelete.map((key) => redisCacheHelper.delete(key)),
-        ...patterns.map((pattern) => redisCacheHelper.deletePattern(pattern)),
-      ]);
+      // await Promise.all([
+      //   ...keysToDelete.map((key) => redisCacheHelper.delete(key)),
+      //   ...patterns.map((pattern) => redisCacheHelper.deletePattern(pattern)),
+      // ]);
     } catch (error) {
       logger.error('Error clearing menu cache', { error, requestId, userId });
       throw error;
@@ -390,81 +390,81 @@ export class MenuService {
     }
   }
 
-  async getUserMenus(
-    targetUserId: string,
-    requestId?: string,
-    requestingUserId?: string,
-  ): Promise<Menu[]> {
-    try {
-      if (
-        !targetUserId ||
-        typeof targetUserId !== 'string' ||
-        targetUserId.trim() === ''
-      ) {
-        throw new Error('Invalid or missing user ID');
-      }
+  // async getUserMenus(
+  //   targetUserId: string,
+  //   requestId?: string,
+  //   requestingUserId?: string,
+  // ): Promise<Menu[]> {
+  //   try {
+  //     if (
+  //       !targetUserId ||
+  //       typeof targetUserId !== 'string' ||
+  //       targetUserId.trim() === ''
+  //     ) {
+  //       throw new Error('Invalid or missing user ID');
+  //     }
 
-      logger.debug('Getting user menus', {
-        targetUserId,
-        requestId,
-        requestingUserId,
-      });
+  //     logger.debug('Getting user menus', {
+  //       targetUserId,
+  //       requestId,
+  //       requestingUserId,
+  //     });
 
-      const cacheKey = CacheKeys.userMenus(targetUserId);
-      const cachedMenus = await redisCacheHelper.get<Menu[]>(cacheKey);
-      if (cachedMenus) return cachedMenus;
+  //     const cacheKey = CacheKeys.userMenus(targetUserId);
+  //     const cachedMenus = await redisCacheHelper.get<Menu[]>(cacheKey);
+  //     if (cachedMenus) return cachedMenus;
 
-      // Get user roles from UserService
-      const userRoles: UserRole[] =
-        await UserService.getUserRoles(targetUserId);
-      if (!userRoles?.length) {
-        await redisCacheHelper.set(cacheKey, [], CacheTTL.SHORT);
-        return [];
-      }
+  //     // Get user roles from UserService
+  //     const userRoles: UserRole[] =
+  //       await UserService.getUserRoles(targetUserId);
+  //     if (!userRoles?.length) {
+  //       await redisCacheHelper.set(cacheKey, [], CacheTTL.SHORT);
+  //       return [];
+  //     }
 
-      // Get menus for all roles
-      const roleIds = userRoles.map((ur: UserRole) => ur.roleId);
-      const roleMenus = (await MenuRepository.findByRoleIds(
-        roleIds,
-        requestId,
-        requestingUserId,
-      )) as Menu[];
+  //     // Get menus for all roles
+  //     const roleIds = userRoles.map((ur: UserRole) => ur.roleId);
+  //     const roleMenus = (await MenuRepository.findByRoleIds(
+  //       roleIds,
+  //       requestId,
+  //       requestingUserId,
+  //     )) as Menu[];
 
-      if (!roleMenus.length) {
-        await redisCacheHelper.set(cacheKey, [], CacheTTL.SHORT);
-        return [];
-      }
+  //     if (!roleMenus.length) {
+  //       await redisCacheHelper.set(cacheKey, [], CacheTTL.SHORT);
+  //       return [];
+  //     }
 
-      // Remove duplicates and build hierarchy
-      const uniqueMenus = [
-        ...new Map(roleMenus.map((menu: Menu) => [menu.id, menu])).values(),
-      ];
-      const menuHierarchy = MenuService.buildMenuHierarchy(uniqueMenus);
+  //     // Remove duplicates and build hierarchy
+  //     const uniqueMenus = [
+  //       ...new Map(roleMenus.map((menu: Menu) => [menu.id, menu])).values(),
+  //     ];
+  //     const menuHierarchy = MenuService.buildMenuHierarchy(uniqueMenus);
 
-      // Cache with shorter TTL since user roles might change
-      await redisCacheHelper.set(cacheKey, menuHierarchy, CacheTTL.SHORT);
+  //     // Cache with shorter TTL since user roles might change
+  //     await redisCacheHelper.set(cacheKey, menuHierarchy, CacheTTL.SHORT);
 
-      return menuHierarchy;
-    } catch (error) {
-      logger.error('Error getting user menus', {
-        targetUserId,
-        error,
-        requestId,
-        requestingUserId,
-      });
+  //     return menuHierarchy;
+  //   } catch (error) {
+  //     logger.error('Error getting user menus', {
+  //       targetUserId,
+  //       error,
+  //       requestId,
+  //       requestingUserId,
+  //     });
 
-      // Fallback to cached data if available
-      const fallback = await redisCacheHelper.get<Menu[]>(
-        CacheKeys.userMenus(targetUserId),
-      );
-      if (fallback) {
-        logger.warn('Using cached menus as fallback due to error', {
-          targetUserId,
-        });
-        return fallback;
-      }
+  //     // Fallback to cached data if available
+  //     const fallback = await redisCacheHelper.get<Menu[]>(
+  //       CacheKeys.userMenus(targetUserId),
+  //     );
+  //     if (fallback) {
+  //       logger.warn('Using cached menus as fallback due to error', {
+  //         targetUserId,
+  //       });
+  //       return fallback;
+  //     }
 
-      throw error;
-    }
-  }
+  //     throw error;
+  //   }
+  // }
 }

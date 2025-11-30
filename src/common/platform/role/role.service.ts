@@ -468,8 +468,8 @@ export const RoleService = {
       await redisCacheHelper.delete(`role:${roleId}`);
       await redisCacheHelper.delete(`role:${roleId}:menus`);
       await redisCacheHelper.delete('role:all');
-      await redisCacheHelper.deletePattern('role:paginated:*');
-      await redisCacheHelper.deletePattern('role:filtered:*');
+      // await redisCacheHelper.deletePattern('role:paginated:*');
+      // await redisCacheHelper.deletePattern('role:filtered:*');
       return true;
     } catch (error) {
       logger.error('Error clearing cache', { error, requestId, userId });

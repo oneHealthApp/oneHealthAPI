@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { validateRequest } from '../../../middlewares';
 import { MenuController } from './menu.controller';
 import { MenuValidator } from './menu.validator';
-import { UserValidator } from '../user/user.validator';
+// import { UserValidator } from '../user/user.validator';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ router.get(
 );
 router.get('/menu/:id', MenuController.getMenuById);
 router.get('/menu/role/:roleId', MenuController.getRoleMenus);
-router.get('/menu/user/:userId', MenuController.getUserMenus);
+// router.get('/menu/user/:userId', MenuController.getUserMenus);
 router.post(
   '/menu',
   validateRequest(MenuValidator.create),

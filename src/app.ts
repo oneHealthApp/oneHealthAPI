@@ -52,7 +52,13 @@ app.use(
   }),
 );
 
-app.use(cors());
+// app.use(cors());
+app.use(
+  cors({
+    origin: '*',
+  }),
+);
+
 app.use(
   helmet({
     contentSecurityPolicy: false,
@@ -78,7 +84,11 @@ app.get(swaggerJsonPath, (req: Request, res: Response) => {
 });
 
 // Serve Swagger UI
-app.use(swaggerPath, swaggerUi.serve, swaggerUi.setup(swaggerSpec, swaggerUiOptions));
+app.use(
+  swaggerPath,
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, swaggerUiOptions),
+);
 
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
@@ -86,7 +96,7 @@ app.get('/health', (req: Request, res: Response) => {
     status: 'OK',
     timestamp: new Date().toISOString(),
     service: 'OneHealth API',
-    version: '1.0.0'
+    version: '1.0.0',
   });
 });
 
